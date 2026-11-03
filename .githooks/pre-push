@@ -1,0 +1,13 @@
+#!/bin/sh
+# Maintainer guard: shared branches enter through a checked pull request.
+# No network requests, builds or credentials are needed by this hook.
+while read -r local_ref local_sha remote_ref remote_sha
+do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master|refs/heads/release|refs/heads/release/*)
+      echo "Push blocked: $remote_ref is a shared branch. Push a feature branch, wait for its current PR checks, then merge the PR." >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0

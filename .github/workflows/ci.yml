@@ -11,6 +11,7 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci --no-audit --no-fund
       - run: npm --prefix cloud/tools ci --ignore-scripts --no-audit --no-fund
+      - run: npm --prefix cloud/official ci --ignore-scripts --no-audit --no-fund
       - run: node cloud/selfhost/audit-source.mjs
       - run: npm run test:public
       - run: node --max-old-space-size=128 cloud/tests/run.mjs

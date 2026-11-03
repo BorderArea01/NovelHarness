@@ -56,7 +56,7 @@ npm run test:public
 npm run test:public:integration
 ```
 
-集成测试用独立身份和合成小说验证隔离与重启，不调用付费模型。共享小说协议测试：`node cloud/tests/run.mjs`。私有环境迁移脚本需要部署者自己的记录，不是首次启动步骤。
+集成测试用独立身份和合成小说验证隔离与重启，不调用付费模型。共享小说协议测试需要先运行 `npm --prefix cloud/official ci --ignore-scripts`，再执行 `node cloud/tests/run.mjs`。私有环境迁移脚本需要部署者自己的记录，不是首次启动步骤。
 
 ## 许可证
 

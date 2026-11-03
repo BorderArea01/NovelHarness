@@ -52,6 +52,7 @@ import './writing-run.test.mjs';
 import './reading-edition.test.mjs';
 import './native-shell.test.mjs';
 import './application.test.mjs';
+import './cleanup-lan-book.test.mjs';
 import './conversation-reset.test.mjs';
 import './studio-theme.test.mjs';
 import './control-affordance.test.mjs';

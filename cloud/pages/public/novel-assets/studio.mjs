@@ -158,7 +158,8 @@ export function mountLibrary(
 
   function updatePresentation() {
     for (const card of cards.values()) {
-      card.node.querySelector('h3').textContent = decorateBook(card.book).title;
+      const heading = card.node.querySelector('h3');
+      heading.textContent = heading.title = decorateBook(card.book).title;
       renderActivity(card);
     }
     filterBooks();
@@ -263,7 +264,7 @@ export function mountLibrary(
         $('books').append(node);
         continue;
       }
-      node.querySelector('h3').textContent = decorateBook(book).title;
+      node.querySelector('h3').textContent = node.querySelector('h3').title = decorateBook(book).title;
       const heading = owner.createElement('div');
       heading.className = 'book-title-row';
       const mark = owner.createElement('span');

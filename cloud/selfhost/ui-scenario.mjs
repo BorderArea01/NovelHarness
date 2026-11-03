@@ -41,12 +41,61 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
   await page.getByRole('textbox', { name: '书名', exact: true }).fill('取消的新作品');
   await page.getByRole('button', { name: '取消建书', exact: true }).click();
   assert.equal(await page.locator('.book').count(), 3);
+  // Reproduce the reported mix: a long unbroken book name and one card with
+  // conversation status. This DOM-only fixture never creates a paid session.
+  const fixture = await page
+    .locator('.book')
+    .first()
+    .evaluate((node) => {
+      const title = node.querySelector('h3'),
+        activity = node.querySelector('.book-activity');
+      const previous = { title: title.textContent, html: activity.innerHTML, hidden: activity.hidden };
+      title.textContent = 'b-88633d364b4cd7752937bab6040cc67e';
+      activity.hidden = false;
+      const row = document.createElement('div');
+      row.className = 'book-session';
+      const state = document.createElement('span');
+      state.textContent = 'AI 已结束';
+      const button = document.createElement('button');
+      button.textContent = '查看对话';
+      row.append(state, button);
+      activity.replaceChildren(row);
+      return previous;
+    });
   for (const width of [1280, 768, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     await waitResponsiveLayout(page);
     await overflow();
+    const boxes = await page.locator('.book:visible').evaluateAll((nodes) =>
+      nodes.map((node) => {
+        const rect = node.getBoundingClientRect(),
+          actions = node.querySelector('.actions').getBoundingClientRect();
+        return {
+          top: rect.top,
+          bottom: rect.bottom,
+          actions: actions.top,
+          overflow: node.scrollWidth > node.clientWidth + 1,
+        };
+      }),
+    );
+    for (const box of boxes) {
+      assert.equal(box.overflow, false, 'Book contents overflow the card.');
+      for (const peer of boxes.filter((other) => Math.abs(other.top - box.top) < 1)) {
+        assert(Math.abs(peer.bottom - box.bottom) < 1, 'Cards on the same row must have equal height.');
+        assert(Math.abs(peer.actions - box.actions) < 1, 'Book actions must align on the same row.');
+      }
+    }
     await shot('library-' + width);
   }
+  await page
+    .locator('.book')
+    .first()
+    .evaluate((node, previous) => {
+      node.querySelector('h3').textContent = previous.title;
+      const activity = node.querySelector('.book-activity');
+      activity.innerHTML = previous.html;
+      activity.hidden = previous.hidden;
+    }, fixture);
   await page.setViewportSize({ width: 1280, height: 900 });
   await waitResponsiveLayout(page);
   await card.getByRole('button', { name: '进入创作', exact: true }).click();

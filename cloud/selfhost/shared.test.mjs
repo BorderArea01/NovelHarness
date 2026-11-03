@@ -93,8 +93,15 @@ try {
   const session = await rpc(0, 'session/create', { request: { cwd: bundle.manifest.root } });
   const before = await rpc(1, 'session/list', { _request: {} });
   assert(before.items.length > 0);
+  const pluginEvents = await response(0, '/plugins/events');
+  assert.equal(pluginEvents.status, 200);
+  assert.match(pluginEvents.headers.get('content-type'), /^text\/event-stream/);
+  // Keep the real native subscription open while stopping an idle service.
+  // The subscription is not AI or a save operation and must not block forever.
   await app.close();
   app = null;
+  await pluginEvents.body?.cancel().catch(() => {});
+  report.passiveSubscriptionDoesNotBlockIdleShutdown = true;
   // Existing cookies and PIN survive restart, even with a different ephemeral
   // listener port. A bootstrap PIN is never used to reset an existing PIN.
   app = await startSelfHostedServer({ mode: 'shared', port: 0, dataDirectory: root, initialPin: '000000' });

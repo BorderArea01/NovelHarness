@@ -72,7 +72,7 @@ export async function startSelfHostedServer({
       res.end(JSON.stringify({ error: message }));
     };
     async function idle(entry) {
-      if (entry.requests) return false;
+      if (entry.requests > entry.subscriptions) return false;
       return new Promise((resolveIdle) => {
         const id = randomUUID(),
           timer = setTimeout(() => done(false), 3000);
@@ -149,7 +149,7 @@ export async function startSelfHostedServer({
         );
         // Do not emit per-visitor logs: upstream exceptions can contain prose.
         child.stderr.resume();
-        const entry = { child, key, requests: 0, last: Date.now() };
+        const entry = { child, key, requests: 0, subscriptions: 0, last: Date.now() };
         const ready = new Promise((resolveReady, reject) => {
           let startupError;
           const timer = setTimeout(() => {
@@ -273,15 +273,21 @@ export async function startSelfHostedServer({
           res.setHeader('set-cookie', identity.cookie(token, new URL(origin).protocol === 'https:'));
         }
         const entry = await getVisitor(id);
-        let finished = false;
+        let finished = false,
+          subscription = false;
         const finish = () => {
           if (!finished) {
             finished = true;
             entry.requests--;
+            if (subscription) entry.subscriptions--;
             entry.last = Date.now();
           }
         };
         res.once('close', finish);
+        if (res.destroyed) {
+          finish();
+          return;
+        }
         if (req.url === '/api/deployment/details') {
           if (req.method !== 'GET') return error(res, 405, '部署信息只读；请在主机修改部署配置并重启。');
           const proof = await fetch(entry.origin + '/api/auth/session', {
@@ -310,6 +316,22 @@ export async function startSelfHostedServer({
           entry.origin + req.url,
           { method: req.method, headers: headers(req, entry, outside) },
           (response) => {
+            if (res.destroyed) {
+              response.destroy();
+              return;
+            }
+            // Native plugin status is a read-only, persistent UI event feed.
+            // It must not keep an idle writing host permanently "busy". AI
+            // output and every other request still reserve the host; native
+            // agent activity is checked again before any worker is stopped.
+            if (
+              req.method === 'GET' &&
+              req.url.split('?')[0] === '/plugins/events' &&
+              /^text\/event-stream(?:;|$)/i.test(String(response.headers['content-type'] ?? ''))
+            ) {
+              subscription = true;
+              entry.subscriptions++;
+            }
             const h = { ...response.headers };
             if (!shared) delete h['set-cookie'];
             else if (h['set-cookie'])
@@ -412,7 +434,7 @@ export async function startSelfHostedServer({
           // event-loop tick. Drain it; do not confuse it with active generation
           // or forcibly abort uploads/streams to make shutdown pass.
           const deadline = Date.now() + 2000;
-          while (entry.requests && Date.now() < deadline) await delay(25);
+          while (entry.requests > entry.subscriptions && Date.now() < deadline) await delay(25);
           if (!(await idle(entry))) {
             closing = false;
             throw new Error('AI or HTTP requests are still active.');

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { expect } from '@playwright/test';
 import {
   openChapter,
   waitEditor,
@@ -13,12 +14,12 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
   const search = page.getByRole('searchbox', { name: '搜索小说', exact: true });
   await search.fill('雨港');
-  assert.equal(await page.locator('.book:visible').count(), 1);
+  await expect(page.locator('.book:visible')).toHaveCount(1);
   await search.fill('没有这个书名');
   await page.getByRole('heading', { name: '没有匹配的小说', exact: true }).waitFor();
-  assert.equal(await page.locator('.book:visible').count(), 0);
+  await expect(page.locator('.book:visible')).toHaveCount(0);
   await search.fill('');
-  assert.equal(await page.locator('.book:visible').count(), 3);
+  await expect(page.locator('.book:visible')).toHaveCount(3);
   const card = page.locator('.book[data-book-id="' + book.id + '"]');
   assert.equal(await card.getByRole('button', { name: '删除整本书', exact: true }).isVisible(), false);
   const menu = card.locator('.book-tools > summary');

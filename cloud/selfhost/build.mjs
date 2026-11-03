@@ -37,11 +37,14 @@ for (const path of [
   'cloud/worker',
   'cloud/pages',
   'cloud/shared',
+  'cloud/legal',
 ])
   await cp(resolve(path), join(root, path), {
     recursive: true,
     filter: (p) => !/(?:^|[\\/])(?:node_modules|\.wrangler)(?:[\\/]|$)/.test(p),
   });
+for (const file of ['LICENSE', 'THIRD_PARTY_NOTICES.md'])
+  await cp(resolve(file), join(root, file));
 for (const name of ['package.json', 'package-lock.json'])
   await cp(resolve('cloud/official', name), join(root, 'cloud/official', name));
 const hash = createHash('sha256')

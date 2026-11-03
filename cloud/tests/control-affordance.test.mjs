@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import postcss from 'postcss';
 import { studioTokens, ACCENTS } from '../pages/public/novel-assets/studio-theme.mjs';
 import { contrast } from './control-contrast.mjs';
+import { adaptNativeShell } from '../scripts/native-shell.mjs';
 
 test('button palettes have readable primary/secondary text and visible outlines in every supported theme', () => {
   for (const accent of Object.keys(ACCENTS))
@@ -84,10 +85,9 @@ test('compact reading only reflows the original idle composer and always yields 
     assert.ok(rule.nodes.some((node) => node.prop === 'display' && node.value === 'none'));
   });
   assert.equal(rules, 1);
-  const pinned = await readFile(
-    new URL('../pages/public/native-shell/conversation.js', import.meta.url),
-    'utf8',
-  );
+  const pinned = adaptNativeShell('conversation', await readFile(
+    new URL('../tools/node_modules/dsh-edge/dist/plugins/@deepseek-ai/dsh-client-ui-conversation/client.js', import.meta.url),
+  ));
   assert.ok(pinned.includes('"data-input-scroll": true'));
   const input = pinned.indexOf(
     '(0, react_jsx_runtime.jsx)(DraftEditor, {',

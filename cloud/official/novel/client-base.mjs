@@ -1,7 +1,7 @@
 // Stage the EXISTING immutable novel UI as the official host's client build,
 // then let the ORIGINAL module registry/HMR own its graph. No second graph.
 import assert from 'node:assert/strict';
-import { readFile, writeFile, mkdir, copyFile, unlink, symlink } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, copyFile, unlink, symlink, lstat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
 
@@ -84,4 +84,18 @@ export async function installNovelClientBase() {
   );
   const link = join(modules, 'novel-harness-bridge');
   if (!existsSync(link)) await symlink(plugin, link, 'junction');
+  else if (!(await lstat(link)).isSymbolicLink()) {
+    // Packaged private installations dereference dependency junctions. Keep
+    // their managed bridge in sync too, or it continues requesting the old
+    // immutable asset revision after a UI update. Never replace user plugins.
+    const installed = JSON.parse(await readFile(join(link, 'package.json'), 'utf8'));
+    const generated = JSON.parse(await readFile(join(plugin, 'package.json'), 'utf8'));
+    assert.deepEqual(installed, generated, 'Installed bridge is not the managed generated package.');
+    assert.equal(
+      await readFile(join(link, 'index.mjs'), 'utf8'),
+      await readFile(join(plugin, 'index.mjs'), 'utf8'),
+      'Installed bridge entry is customized; leave it unchanged.',
+    );
+    await copyFile(join(plugin, 'client.js'), join(link, 'client.js'));
+  }
 }

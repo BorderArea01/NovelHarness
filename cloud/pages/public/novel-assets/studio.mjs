@@ -161,6 +161,32 @@ export function mountLibrary(
       card.node.querySelector('h3').textContent = decorateBook(card.book).title;
       renderActivity(card);
     }
+    filterBooks();
+  }
+
+  function filterBooks() {
+    const term = ($('book-search')?.value ?? '').trim().toLocaleLowerCase();
+    let visible = 0;
+    for (const node of $('books').querySelectorAll('.book')) {
+      node.hidden = !node.querySelector('h3').textContent.toLocaleLowerCase().includes(term);
+      if (!node.hidden) visible++;
+      const mark = node.querySelector('.book-monogram');
+      if (mark) mark.textContent = [...node.querySelector('h3').textContent][0] || '书';
+    }
+    if ($('library-count')) $('library-count').textContent = visible + (trashView ? ' 本已删除' : ' 部作品');
+    if ($('library-empty')) {
+      $('library-empty').hidden = visible > 0;
+      $('library-empty-title').textContent = term
+        ? '没有匹配的小说'
+        : trashView
+          ? '回收站是空的'
+          : '还没有小说';
+      $('library-empty-message').textContent = term
+        ? '试试其他书名。'
+        : trashView
+          ? '删除的作品会保留在这里。'
+          : '新建一本，或导入已有作品。';
+    }
   }
 
   function status(message, error = false) {
@@ -238,6 +264,22 @@ export function mountLibrary(
         continue;
       }
       node.querySelector('h3').textContent = decorateBook(book).title;
+      const heading = owner.createElement('div');
+      heading.className = 'book-title-row';
+      const mark = owner.createElement('span');
+      mark.className = 'book-monogram';
+      mark.setAttribute('aria-hidden', 'true');
+      node.prepend(heading);
+      heading.append(mark, node.querySelector('h3'));
+      const tools = owner.createElement('details');
+      tools.className = 'book-tools';
+      const summary = owner.createElement('summary');
+      summary.textContent = '管理作品';
+      const toolActions = owner.createElement('div');
+      toolActions.className = 'book-tool-actions';
+      tools.append(summary, toolActions);
+      toolActions.append(node.querySelector('.backup-book'));
+      node.querySelector('.actions').append(tools);
       // The import receipt is not a live word-count/progress source.
       node.querySelector('.book-stats').hidden = true;
       const activity = owner.createElement('section');
@@ -263,7 +305,7 @@ export function mountLibrary(
         button.addEventListener('click', () => {
           if (!busy) management.show({ ...book, title: decorateBook(book).title }, action, button);
         });
-        node.querySelector('.actions').append(button);
+        toolActions.append(button);
       }
       if (renameBook) {
         const toggle = owner.createElement('button');
@@ -284,7 +326,7 @@ export function mountLibrary(
         cancel.textContent = '取消改名';
         form.append(input, save, cancel);
         node.append(form);
-        node.querySelector('.actions').append(toggle);
+        toolActions.prepend(toggle);
         toggle.addEventListener('click', () => {
           if (!busy) {
             form.hidden = false;
@@ -329,6 +371,7 @@ export function mountLibrary(
       }
       $('books').append(node);
     }
+    filterBooks();
     return books.length;
   }
   async function backupBook(book) {
@@ -371,7 +414,7 @@ export function mountLibrary(
     status('正在读取书库…');
     try {
       const [count] = await Promise.all([loadBooks(), refreshActivity?.()]);
-      status(count ? `${count} 本小说` : '还没有小说。新建一本，或导入已有作品。');
+      status($('library-empty') ? '' : count ? `${count} 本小说` : '还没有小说。新建一本，或导入已有作品。');
     } catch (error) {
       status(error.message, true);
     }
@@ -535,10 +578,11 @@ export function mountLibrary(
   });
   $('cancel').addEventListener('click', () => controller?.abort());
   $('refresh').addEventListener('click', refresh);
+  $('book-search')?.addEventListener('input', filterBooks);
   $('show-trash')?.addEventListener('click', async () => {
     if (busy) return;
     trashView = !trashView;
-    $('show-trash').textContent = trashView ? '返回书库' : '回收站';
+    ($('trash-label') ?? $('show-trash')).textContent = trashView ? '返回书库' : '回收站';
     await refresh();
   });
   refresh();

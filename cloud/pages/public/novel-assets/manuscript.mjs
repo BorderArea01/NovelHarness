@@ -509,7 +509,10 @@ export function installManuscript(ctx, React, { navigation: appNavigation, creat
         selected.current = path;
         setShowImportRecords(false);
         if (path.startsWith('chapters/')) lastChapter.current = path;
-        else if (!['outline.json', DIRECTION_PATH].includes(path) && !path.startsWith('drafts/'))
+        else if (
+          !['outline.json', 'rules.json', DIRECTION_PATH].includes(path) &&
+          !path.startsWith('drafts/')
+        )
           lastReference.current = path;
         setDocument(value);
         setText(value.text);
@@ -586,13 +589,22 @@ export function installManuscript(ctx, React, { navigation: appNavigation, creat
           const remembered = key === 'chapter' ? lastChapter.current : lastReference.current;
           path =
             current?.category === category &&
-            !(key === 'reference' && ['outline.json', DIRECTION_PATH].includes(current.path))
+            !(key === 'reference' && ['outline.json', 'rules.json', DIRECTION_PATH].includes(current.path))
               ? current.path
               : (
-                  listing.documents.find((item) => item.path === remembered && item.category === category) ||
                   listing.documents.find(
                     (item) =>
-                      item.category === category && !['outline.json', DIRECTION_PATH].includes(item.path),
+                      item.path === remembered &&
+                      item.category === category &&
+                      !(
+                        key === 'reference' &&
+                        ['outline.json', 'rules.json', DIRECTION_PATH].includes(item.path)
+                      ),
+                  ) ||
+                  listing.documents.find(
+                    (item) =>
+                      item.category === category &&
+                      !['outline.json', 'rules.json', DIRECTION_PATH].includes(item.path),
                   ) ||
                   (key === 'chapter'
                     ? listing.documents.find((item) => item.category === 'draft' && !item.managed)

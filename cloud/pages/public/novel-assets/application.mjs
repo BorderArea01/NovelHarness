@@ -5,6 +5,7 @@ import { conversationTitle } from './conversation-title.mjs';
 import { bindVisibleViewport } from './visual-viewport.mjs';
 import { resetBookConversation } from './conversation-reset.mjs';
 import { createTitleEditor, renameConversation, renameBook } from './title-editor.mjs';
+import { icon } from './ui-icons.mjs';
 import {
   bookActivities,
   subscribeBookActivities,
@@ -24,6 +25,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
   let navigationRevision = 0;
   let initialRevision;
   let view = {
+    area: 'library',
     assistant: false,
     request: null,
     revision: 0,
@@ -44,7 +46,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
   };
   const bookView = (patch) => {
     navigationRevision++;
-    publish(patch);
+    publish({ ...patch, area: 'book' });
     ctx.layout.selectPanel(null);
     remember('book');
     globalThis.history?.replaceState(globalThis.history.state, '', '/');
@@ -84,12 +86,14 @@ export function installApplication(ctx, React, { createPortal } = {}) {
     },
     library() {
       navigationRevision++;
+      publish({ area: 'library' });
       ctx.layout.selectPanel('novel-library');
       remember('library');
       history.replaceState(history.state, '', '/?view=library');
     },
     account() {
       navigationRevision++;
+      publish({ area: 'account' });
       ctx.layout.selectPanel('novel-account');
       remember('account');
       history.replaceState(history.state, '', '/?view=account');
@@ -111,6 +115,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
         // selected. Showing the last book first mounts/reads the wrong editor
         // and competes with the book the author is actually opening.
         ctx.layout.selectPanel(null);
+        publish({ area: 'book' });
         remember('book');
         history.replaceState(history.state, '', '/');
       } catch (error) {
@@ -124,7 +129,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       requireBookSession(ctx, book, id);
       ctx.uiWorkspace.openSession(id);
       ctx.layout.selectPanel(null);
-      publish({ assistant: true, request: null });
+      publish({ assistant: true, request: null, area: 'book' });
       remember('book');
       history.replaceState(history.state, '', '/');
     },
@@ -136,6 +141,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       // A model-settings deep link opens native chrome, not a different book
       // or main panel. Only an explicit book-open request owns that change.
       if (url.searchParams.has('novel')) {
+        publish({ area: 'book' });
         remember('book');
         initialRevision = navigationRevision;
         return;
@@ -148,6 +154,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
           previous = sessionStorage.getItem('novel-last-view');
         } catch {}
         if (previous !== 'book') navigation.library();
+        else publish({ area: 'book' });
       }
       initialRevision = navigationRevision;
     },
@@ -360,6 +367,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
   }
   function NovelSidebar({ collapsed, settings, useSessions, useWorkspaces }) {
     const wide = !collapsed;
+    const area = React.useSyncExternalStore(subscribe, snapshot).area;
     const catalog = useSessions((value) => value);
     const workspaces = useWorkspaces((value) => value);
     const current = Object.values(catalog.byId).find((row) => (row.retainedBy.mainView ?? 0) > 0);
@@ -405,7 +413,8 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       h(
         'button',
         { className: 'novel-studio-brand', onClick: navigation.library, title: '小说库' },
-        wide ? '小说工作台' : '书',
+        icon(React, 'book'),
+        wide ? h('span', null, '小说工作台') : null,
       ),
       h(
         'button',
@@ -416,7 +425,8 @@ export function installApplication(ctx, React, { createPortal } = {}) {
           title: wide ? '收起导航' : '展开导航',
           'aria-expanded': wide,
         },
-        wide ? '收起 ‹' : '›',
+        icon(React, 'panel'),
+        wide ? h('span', null, '收起导航') : null,
       ),
       h(
         'nav',
@@ -427,12 +437,14 @@ export function installApplication(ctx, React, { createPortal } = {}) {
             href: '/novels/',
             'aria-label': '小说库',
             title: '小说库',
+            'aria-current': area === 'library' ? 'page' : undefined,
             onClick: (e) => {
               e.preventDefault();
               navigation.library();
             },
           },
-          wide ? '我的书库' : '库',
+          icon(React, 'library'),
+          wide ? h('span', null, '我的书库') : null,
         ),
         h(
           'button',
@@ -441,8 +453,10 @@ export function installApplication(ctx, React, { createPortal } = {}) {
             title: '当前作品',
             'aria-label': '当前作品',
             disabled: !isBook,
+            'aria-current': area === 'book' ? 'page' : undefined,
           },
-          wide ? '当前作品' : '稿',
+          icon(React, 'file'),
+          wide ? h('span', null, '当前作品') : null,
         ),
       ),
       wide && workspace
@@ -537,7 +551,8 @@ export function installApplication(ctx, React, { createPortal } = {}) {
             navigation.account();
           },
         },
-        anonymous ? '访客数据' : wide ? '账号与 PIN' : 'PIN',
+        icon(React, 'user'),
+        wide ? h('span', null, anonymous ? '访客数据' : '账号与 PIN') : null,
       ),
     );
   }
@@ -607,7 +622,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
         'header',
         { className: 'novel-app-heading' },
         h('h1', null, '我的小说'),
-        h('button', { id: 'new-book', type: 'button' }, '＋ 新建小说'),
+        h('button', { id: 'new-book', type: 'button' }, icon(React, 'plus'), '新建小说'),
       ),
       h(
         'section',
@@ -688,24 +703,58 @@ export function installApplication(ctx, React, { createPortal } = {}) {
         'div',
         { className: 'section-heading' },
         h(
-          'label',
-          { className: 'import-button', htmlFor: 'project-file' },
-          '导入 / 恢复',
-          h('input', { id: 'project-file', type: 'file', accept: '.json,application/json' }),
+          'div',
+          { className: 'novel-library-filter' },
+          icon(React, 'search'),
+          h('input', {
+            id: 'book-search',
+            type: 'search',
+            'aria-label': '搜索小说',
+            placeholder: '搜索书名',
+            autoComplete: 'off',
+          }),
         ),
-        h('button', { id: 'show-trash', type: 'button' }, '回收站'),
-        h('button', { id: 'refresh' }, '刷新'),
+        h('span', { id: 'library-count', className: 'novel-library-count', 'aria-live': 'polite' }),
+        h(
+          'div',
+          { className: 'novel-library-tools' },
+          h(
+            'label',
+            { className: 'import-button', htmlFor: 'project-file' },
+            icon(React, 'download'),
+            '导入 / 恢复',
+            h('input', { id: 'project-file', type: 'file', accept: '.json,application/json' }),
+          ),
+          h(
+            'button',
+            { id: 'show-trash', type: 'button' },
+            icon(React, 'trash'),
+            h('span', { id: 'trash-label' }, '回收站'),
+          ),
+          h('button', { id: 'refresh' }, icon(React, 'refresh'), '刷新'),
+        ),
       ),
       h('div', { id: 'books', className: 'books' }),
+      h(
+        'section',
+        { id: 'library-empty', className: 'novel-library-empty', hidden: true },
+        icon(React, 'book'),
+        h('h2', { id: 'library-empty-title' }, '还没有小说'),
+        h('p', { id: 'library-empty-message' }, '新建一本，或导入已有作品。'),
+      ),
     );
   }
   function Account() {
-    if (anonymous) return h('main', { className: 'novel-application novel-account', 'aria-label': '访客数据' },
-      h('h1', null, '你的独立写作空间'),
-      h('p', null, '书稿、对话与模型配置只属于当前访客，不与其他访客共享。'),
-      h('p', null, '浏览器 Cookie 是访问凭证。换浏览器、换设备或清除网站数据后，不会自动找回此空间。'),
-      h('p', null, '请在小说库定期导出作品备份。部署者可管理服务器数据，此功能不提供端到端加密。'),
-      h('button', { type: 'button', onClick: () => navigation.library() }, '返回小说库'));
+    if (anonymous)
+      return h(
+        'main',
+        { className: 'novel-application novel-account', 'aria-label': '访客数据' },
+        h('h1', null, '你的独立写作空间'),
+        h('p', null, '书稿、对话与模型配置只属于当前访客，不与其他访客共享。'),
+        h('p', null, '浏览器 Cookie 是访问凭证。换浏览器、换设备或清除网站数据后，不会自动找回此空间。'),
+        h('p', null, '请在小说库定期导出作品备份。部署者可管理服务器数据，此功能不提供端到端加密。'),
+        h('button', { type: 'button', onClick: () => navigation.library() }, '返回小说库'),
+      );
     const [configured, setConfigured] = React.useState(null),
       [message, setMessage] = React.useState('正在检查账号…'),
       [busy, setBusy] = React.useState(false);

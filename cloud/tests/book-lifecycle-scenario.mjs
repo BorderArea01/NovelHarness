@@ -26,8 +26,13 @@ export async function verifyBookLifecycle({ page, context, origin, book, model, 
     }
     await page.getByRole('link', { name: '小说库', exact: true }).click();
     const card = () => page.locator('.book[data-book-id="' + book.id + '"]');
+    async function tools() {
+      const details = card().locator('.book-tools');
+      if ((await details.getAttribute('open')) === null) await details.locator('summary').click();
+    }
     await card().waitFor();
     // Cancelling must not move the book or leave a modal over the library.
+    await tools();
     await card().getByRole('button', { name: '删除整本书', exact: true }).click();
     const panel = page.getByRole('region', { name: '管理小说', exact: true });
     await panel.getByRole('button', { name: '确认删除整本书', exact: true }).waitFor();
@@ -47,6 +52,7 @@ export async function verifyBookLifecycle({ page, context, origin, book, model, 
     await card().waitFor({ state: 'detached' });
     assert.equal(storage.fs.readFileSync(book.root + '/setting.md', 'utf8'), marker);
     await page.getByRole('button', { name: '返回书库', exact: true }).click();
+    await tools();
     await card().getByRole('button', { name: '重新开始', exact: true }).click();
     await panel.getByRole('button', { name: '确认重新开始', exact: true }).waitFor();
     assert.equal(await panel.getByLabel('重新开始的新灵感', { exact: true }).inputValue(), '');

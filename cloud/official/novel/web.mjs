@@ -249,8 +249,16 @@ export async function startNovelWeb(
       return url.pathname === '/'
         ? new Response(null, { status: 302, headers: { location: '/login', 'cache-control': 'no-store' } })
         : json({ error: '请先登录。' }, 401);
-    if (anonymous && /^\/dsh-purge\/(skills?|rules|update|apply|revert|uninstall|restart|drill-grant)(\/|$)/.test(url.pathname))
-      return json({ ok: false, error: '访客可编辑自己的插件提示词；宿主安装、规则文件与更新由部署者维护。' }, 403);
+    if (
+      anonymous &&
+      /^\/dsh-purge\/(skills?|rules|update|apply|revert|uninstall|restart|drill-grant)(\/|$)/.test(
+        url.pathname,
+      )
+    )
+      return json(
+        { ok: false, error: '访客可编辑自己的插件提示词；宿主安装、规则文件与更新由部署者维护。' },
+        403,
+      );
     if (
       (staging || production || anonymous) &&
       /^\/dsh-purge\/(apply|revert|uninstall|restart|update|drill-grant)(\/|$)/.test(url.pathname) &&

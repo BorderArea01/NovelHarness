@@ -12,9 +12,9 @@ export function studioTokens(accent = 'neutral') {
   const color = ACCENTS[accent] ?? ACCENTS.neutral;
   return {
     '--dsw-alias-bg-base': pair('#f5f5f7', '#151619'),
-    '--dsw-alias-bg-layer-1': pair('#ffffff', '#1b1c20'),
-    '--dsw-alias-bg-layer-2': pair('#ffffff', '#232429'),
-    '--dsw-alias-bg-layer-3': pair('#ffffff', '#2b2d33'),
+    '--dsw-alias-bg-layer-1': pair('#ffffff', '#1b1e24'),
+    '--dsw-alias-bg-layer-2': pair('#f9fafb', '#242830'),
+    '--dsw-alias-bg-layer-3': pair('#f0f2f5', '#2e333d'),
     '--dsw-alias-bg-module-platform': pair('#eceef1', '#1b1c20'),
     '--dsw-alias-border-l2': pair('#dfe1e6', '#303239'),
     '--dsw-alias-border-l3': pair('#d9dce2', '#36383f'),
@@ -31,6 +31,7 @@ export function studioTokens(accent = 'neutral') {
     '--novel-control-border': pair('#7b818e', '#7d8494'),
     '--novel-control-hover': pair('#ebeef4', '#343947'),
     '--novel-control-disabled-bg': pair('#eceef2', '#24262c'),
+    '--novel-surface-shadow': pair('0 4px 20px #1c243008', '0 4px 20px #00000018'),
   };
 }
 export function installStudioTheme(ctx, React, { storage } = {}) {

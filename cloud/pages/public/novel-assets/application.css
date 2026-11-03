@@ -3,11 +3,14 @@
   height: 100%;
   overflow: auto;
   min-width: 0;
-  padding: clamp(20px, 4vw, 52px);
+  padding: clamp(20px, 4vw, 48px);
   color: inherit;
   background: var(--dsw-alias-bg-base);
   font:
-    14px/1.7 system-ui,
+    14px/1.7 'Segoe UI',
+    'PingFang SC',
+    'Microsoft YaHei',
+    system-ui,
     sans-serif;
 }
 
@@ -22,6 +25,7 @@
   --studio-accent: var(--dsw-alias-state-business-primary);
   --studio-paper: var(--dsw-alias-bg-layer-1);
   color: var(--studio-ink);
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
 }
 .novel-desk [hidden],
 .novel-library [hidden] {
@@ -57,7 +61,7 @@
   align-items: center;
   gap: 10px;
   flex: none;
-  padding: 4px 16px;
+  padding: 8px 20px;
   border-bottom: 1px solid var(--studio-line);
 }
 .novel-desk-heading-host {
@@ -548,11 +552,6 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 .novel-application .section-heading {
   flex-wrap: wrap;
 }
-.novel-application .book .actions {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: 8px;
-}
 .novel-application .book .open-book {
   background: var(--dsw-alias-state-business-primary);
   border-color: var(--dsw-alias-state-business-primary);
@@ -590,21 +589,23 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 .novel-desk .novel-ms-heading strong {
   font-size: 23px;
   letter-spacing: 0.02em;
-  font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  font-family: inherit;
 }
 .novel-desk .novel-ms-tabs {
-  gap: 6px;
-  padding: 4px 16px;
+  gap: 4px;
+  padding: 6px 20px;
   flex-shrink: 0;
 }
 .novel-desk .novel-ms-tabs button {
-  padding: 8px 16px;
-  border-radius: 7px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  border-color: transparent;
+  background: var(--dsw-alias-bg-layer-2);
   font-weight: 500;
 }
 .novel-desk .novel-ms-tabs button[aria-pressed='true'] {
-  color: var(--dsw-alias-label-primary-foreground);
-  background: var(--studio-accent);
+  color: var(--studio-ink);
+  background: var(--novel-control-hover);
   border-color: var(--studio-accent);
   font-weight: 650;
 }
@@ -643,7 +644,7 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   font-size: 12px;
 }
 .novel-desk .novel-ms-body {
-  padding: 12px 32px 32px;
+  padding: 16px 28px 20px;
 }
 .novel-desk .novel-chapter-focus {
   padding: 0;
@@ -657,12 +658,15 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 .novel-desk .novel-prose-editor {
   background: var(--studio-paper);
   border-color: var(--studio-line);
+  border: 1px solid var(--studio-line);
+  border-radius: 12px;
+  box-shadow: var(--novel-surface-shadow);
 }
 .novel-desk .novel-prose-editor .cm-content {
   font-family: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
   font-size: 17px;
   line-height: 2;
-  padding: 24px;
+  padding: 28px clamp(20px, 4vw, 48px) 72px;
 }
 .novel-desk .novel-ms-ai {
   background: var(--studio-paper);
@@ -672,24 +676,25 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 .novel-studio-sidebar {
   box-sizing: border-box;
   height: 100%;
-  padding: 28px 20px 18px;
+  padding: 20px 14px 16px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   background: var(--dsw-alias-bg-layer-1);
   border-right: 1px solid var(--studio-line);
   overflow: auto;
 }
 .novel-studio-brand {
   text-align: left;
-  font-size: 20px !important;
-  letter-spacing: 0.08em;
+  font-size: 16px !important;
+  font-weight: 650;
+  letter-spacing: 0.02em;
   color: var(--studio-accent) !important;
   padding: 10px 12px;
 }
 .novel-sidebar-toggle {
-  align-self: flex-start;
-  font-size: 11px !important;
+  align-self: stretch;
+  font-size: 12px !important;
   color: var(--studio-muted) !important;
 }
 .novel-studio-links {
@@ -699,11 +704,24 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 }
 .novel-studio-links > *,
 .novel-studio-sidebar > a {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-align: left;
   text-decoration: none;
   padding: 10px 12px;
-  border-radius: 5px;
+  border-radius: 10px;
+}
+.novel-studio-sidebar > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+.novel-studio-links [aria-current='page'] {
+  background: var(--novel-control-hover);
+  border-color: var(--studio-accent);
+  font-weight: 600;
 }
 .novel-studio-links > *:hover,
 .novel-studio-sidebar > a:hover {
@@ -931,11 +949,12 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   background: var(--dsw-alias-bg-base);
 }
 .novel-library .novel-app-heading {
-  margin-block: 18px 40px;
+  margin-block: 8px 28px;
 }
 .novel-library .novel-app-heading h1 {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 32px;
+  font-family: inherit;
+  font-size: 28px;
+  letter-spacing: -0.035em;
 }
 .novel-library #new-book:not(:disabled),
 .novel-library #create-next:not(:disabled),
@@ -944,15 +963,8 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   color: var(--dsw-alias-label-primary-foreground);
   border-color: transparent;
 }
-.novel-library .book {
-  background: var(--studio-paper);
-  border: 1px solid var(--studio-line);
-  padding: 26px;
-  border-radius: 12px;
-}
 .novel-library .book h3 {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 20px;
+  font-family: inherit;
   line-height: 1.6;
 }
 .novel-create-guide {
@@ -1099,7 +1111,7 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   box-sizing: border-box;
 }
 .novel-application > * {
-  max-width: 960px;
+  max-width: 1120px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -1125,9 +1137,9 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 .novel-application .import-button {
   border: 1px solid var(--novel-control-border, var(--dsw-alias-border-l3));
   background: var(--novel-control-bg, var(--dsw-alias-bg-layer-2));
-  border-radius: 7px;
+  border-radius: 10px;
   padding: 7px 14px;
-  min-height: 38px;
+  min-height: 42px;
   cursor: pointer;
 }
 .novel-application button:disabled {
@@ -1200,6 +1212,9 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   margin-bottom: 16px;
   overflow-wrap: anywhere;
 }
+.novel-application .status-row:has(#status:empty):not(:has(#cancel:not([hidden]))) {
+  display: none;
+}
 .novel-application .preview {
   padding: 18px;
   border: 1px solid var(--dsw-alias-border-l3, #3c403b);
@@ -1210,24 +1225,28 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   justify-content: flex-start;
 }
 .novel-application .section-heading {
-  margin: 26px auto 14px;
+  margin: 0 auto 20px;
+  flex-wrap: wrap;
 }
 .novel-application .books {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 14px;
+  gap: 20px;
+  align-items: start;
 }
 .novel-application .book {
   border: 1px solid var(--dsw-alias-border-l3, #3c403b);
-  border-radius: 5px;
-  padding: 18px;
+  border-radius: 16px;
+  padding: 22px;
   min-width: 0;
+  background: var(--dsw-alias-bg-layer-1);
+  box-shadow: var(--novel-surface-shadow);
 }
 .novel-application .book h3 {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  font-weight: 600;
   overflow-wrap: anywhere;
-  margin: 0 0 12px;
+  margin: 0;
 }
 .novel-application .book-stats {
   font-size: 13px;
@@ -1235,7 +1254,137 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   line-height: 1.7;
 }
 .novel-application .book .actions {
-  margin-top: 16px;
+  margin-top: 22px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: stretch;
+  gap: 10px;
+}
+.novel-ui-icon {
+  flex: none;
+  vertical-align: middle;
+}
+.novel-library #new-book,
+.novel-library-tools > button,
+.novel-library .import-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.novel-library-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.novel-library-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 12px;
+  border: 1px solid var(--novel-control-border);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1);
+  min-width: 0;
+  flex: 1 1 200px;
+  max-width: 320px;
+}
+.novel-library-filter #book-search {
+  border: 0;
+  padding: 9px 0;
+  width: 100%;
+  min-width: 0;
+  background: transparent;
+  outline-offset: 0;
+}
+.novel-library-count {
+  color: var(--studio-muted);
+  font-size: 12px;
+  white-space: nowrap;
+  margin-right: auto;
+}
+.book-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 60px;
+}
+.book-monogram {
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 54px;
+  border: 1px solid var(--studio-line);
+  border-left: 3px solid var(--studio-muted);
+  border-radius: 5px 10px 10px 5px;
+  font-size: 20px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--studio-ink);
+}
+.novel-library .book .open-book {
+  flex: 1 1 auto;
+  font-weight: 600;
+}
+.book-tools {
+  flex: 1 1 110px;
+  min-width: 0;
+}
+.book-tools > summary {
+  border: 1px solid var(--novel-control-border);
+  border-radius: 10px;
+  background: var(--novel-control-bg);
+  padding: 8px 12px;
+  min-height: 42px;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+}
+.book-tools[open] {
+  flex-basis: 100%;
+}
+.book-tools[open] > summary {
+  text-align: left;
+}
+.book-tool-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--studio-line);
+}
+.novel-library .book-tool-actions [data-variant='danger'] {
+  color: var(--dsw-alias-state-error-primary, #dc7674);
+}
+.novel-library-empty {
+  padding: clamp(44px, 10vh, 100px) 24px;
+  text-align: center;
+  border: 1px dashed var(--studio-line);
+  border-radius: 16px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+.novel-library-empty > svg {
+  width: 36px;
+  height: 36px;
+  color: var(--studio-muted);
+  margin-bottom: 14px;
+}
+.novel-library-empty > h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.novel-library-empty > p {
+  margin: 0;
+  color: var(--studio-muted);
+}
+/* The original plugin entry remains available in the assistant. Its fallback
+   floating launcher must not cover the manuscript or mobile writing controls. */
+body:has(.novel-desk[data-assistant='closed']) [data-testid='dsh-purge-launch'] {
+  display: none;
 }
 .book-activity {
   border-top: 1px solid var(--dsw-alias-border-l3, #3c403b);
@@ -1273,11 +1422,36 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   white-space: normal;
 }
 @media (max-width: 600px) {
-  .novel-application .book .actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .novel-library .novel-app-heading {
+    margin-bottom: 20px;
+    gap: 12px;
   }
-  .novel-application .book .open-book {
-    grid-column: 1 / -1;
+  .novel-library .novel-app-heading h1 {
+    font-size: 23px;
+  }
+  .novel-library .section-heading {
+    gap: 12px;
+  }
+  .novel-library-filter {
+    flex-basis: calc(100% - 80px);
+    max-width: none;
+  }
+  .novel-library-tools {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1.25fr 1fr 1fr;
+  }
+  .novel-library-tools > *,
+  .novel-library .import-button {
+    padding-inline: 8px;
+    min-height: 44px;
+  }
+  .novel-application .book {
+    padding: 20px;
+  }
+  .novel-library .book .open-book,
+  .book-tools > summary {
+    min-height: 44px;
   }
   .novel-book-management {
     padding: 1rem;

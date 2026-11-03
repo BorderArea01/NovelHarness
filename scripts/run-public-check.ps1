@@ -14,7 +14,7 @@ try {
     integration='--max-old-space-size=192 cloud/selfhost/isolation.test.mjs'
     browser='--max-old-space-size=192 cloud/selfhost/browser.test.mjs'
     protocol='--max-old-space-size=128 cloud/tests/run.mjs'
-    format='--max-old-space-size=128 node_modules/prettier/bin/prettier.cjs --write cloud/selfhost/*.mjs cloud/official/novel/runtime.mjs cloud/official/novel/web.mjs cloud/official/novel/storage.mjs README.md SECURITY.md .github/workflows/*.yml'
+    format='--max-old-space-size=128 node_modules/prettier/bin/prettier.cjs --write cloud/selfhost/*.mjs cloud/official/novel/runtime.mjs cloud/official/novel/web.mjs cloud/official/novel/storage.mjs cloud/pages/public/novel-assets/application.css cloud/pages/public/novel-assets/application.mjs cloud/pages/public/novel-assets/manuscript.css cloud/pages/public/novel-assets/manuscript.mjs cloud/pages/public/novel-assets/studio-theme.mjs cloud/pages/public/novel-assets/studio.mjs cloud/pages/public/novel-assets/ui-icons.mjs cloud/tests/book-lifecycle-scenario.mjs README.md SECURITY.md .github/workflows/*.yml'
   }
   $child=Start-Process -FilePath (Get-Command node.exe).Source -ArgumentList $commands[$Task] -WorkingDirectory $root -WindowStyle Hidden -PassThru -RedirectStandardOutput "$root/test-results/public-$Task.out.log" -RedirectStandardError "$root/test-results/public-$Task.error.log"
   $null=$child.Handle

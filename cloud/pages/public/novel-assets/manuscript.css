@@ -37,7 +37,7 @@
   background: var(--novel-control-bg, var(--dsw-alias-bg-layer-2));
   border: 1px solid var(--novel-control-border, var(--ms-border));
   padding: 8px 12px;
-  border-radius: 7px;
+  border-radius: 10px;
   cursor: pointer;
   min-height: 40px;
   line-height: 1.5;
@@ -206,7 +206,7 @@
   color: inherit;
   background: transparent;
   border: 1px solid var(--ms-border);
-  border-radius: 4px;
+  border-radius: 9px;
 }
 .novel-chapter-matches {
   display: flex;
@@ -1098,14 +1098,17 @@ fieldset.novel-canon-detail {
   margin: 10px 0;
 }
 .novel-outline-chapter {
-  border-bottom: 1px solid var(--ms-border);
-  padding: 14px 0 20px;
+  border: 1px solid var(--ms-border);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
+  padding: 18px;
+  margin-block: 12px;
   min-width: 0;
 }
 .novel-outline-chapter h3 {
-  font-size: 17px;
+  font-size: 18px;
   line-height: 1.6;
-  font-weight: 500;
+  font-weight: 600;
   margin: 0 0 8px;
   overflow-wrap: anywhere;
 }
@@ -1225,11 +1228,19 @@ fieldset.novel-canon-detail {
   }
 }
 .novel-rules-section {
-  border-bottom: 1px solid var(--ms-border);
-  padding: 3px 0 10px;
+  border: 1px solid var(--ms-border);
+  border-radius: 12px;
+  background: var(--dsw-alias-bg-layer-1);
+  padding: 12px;
+  margin-bottom: 12px;
 }
 .novel-rules-section > summary {
-  font-weight: 500;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--dsw-alias-bg-layer-2);
+  cursor: pointer;
 }
 .novel-rules-field {
   display: block;

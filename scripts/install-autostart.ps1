@@ -4,14 +4,19 @@ $launcher = Join-Path $PSScriptRoot 'start-server.ps1'
 $startup = [Environment]::GetFolderPath('Startup')
 $target = Join-Path $startup 'NovelWriterLAN.cmd'
 
-if (-not (Test-Path -LiteralPath (Join-Path $root 'apps\server\dist\index.js'))) {
-  Push-Location $root
-  try {
-    & npm.cmd run build
-    if ($LASTEXITCODE -ne 0) { throw 'Production build failed.' }
-  } finally { Pop-Location }
-}
+Push-Location -LiteralPath $root
+try {
+  $raw = & node.exe --max-old-space-size=96 cloud/selfhost/print-config.mjs
+  if ($LASTEXITCODE -ne 0) { throw 'Cannot read deployment configuration.' }
+  $config = $raw | ConvertFrom-Json
+  if (-not $config.prepared) { throw 'Run npm run build before installing startup. No automatic build was started.' }
+  if ($config.mode -eq 'shared' -and -not $config.pinConfigured -and -not $config.canInitialize) {
+    throw 'Run npm start once to set the private PIN before enabling startup.'
+  }
+} finally { Pop-Location }
 
-$content = "@echo off`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$launcher`"`r`n"
+$command = "& '" + $launcher.Replace("'", "''") + "'"
+$encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($command))
+$content = "@echo off`r`npowershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand $encoded`r`n"
 Set-Content -LiteralPath $target -Value $content -Encoding ascii
 Write-Host "Autostart enabled: $target"

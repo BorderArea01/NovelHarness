@@ -7,13 +7,13 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 let configuredStorage;
 
-export async function initializeNovelStorage(path) {
+export async function initializeNovelStorage(path, options) {
   if (configuredStorage) {
     if (configuredStorage.path !== resolve(path))
       throw new Error('A second manuscript store is not allowed.');
     return configuredStorage;
   }
-  configuredStorage = await openNovelStorage(path);
+  configuredStorage = await openNovelStorage(path, options);
   return configuredStorage;
 }
 export function isVirtualPath(path) {
@@ -72,11 +72,15 @@ export function ensureVirtualDirectory(path) {
   configuredStorage.fs.mkdirSync(path, { recursive: true });
 }
 
-export async function createEmptyNovelStorage(filename) {
+export async function createEmptyNovelStorage(filename, { dataRoot } = {}) {
   const scope = resolve('data/official-validation/integration');
   const path = resolve(filename);
   const rel = relative(scope, path);
-  if (!/^visitors[/\\][a-f0-9]{64}[/\\]main\.sqlite$/.test(rel))
+  if (
+    dataRoot
+      ? path !== resolve(dataRoot, 'main.sqlite')
+      : !/^visitors[/\\][a-f0-9]{64}[/\\]main\.sqlite$/.test(rel)
+  )
     throw new Error('Empty stores may only be created in the anonymous deployment visitor directory.');
   const { initializeSchema } = await import(pathToFileURL(resolve(scope, 'vfs.mjs')));
   const raw = new Database(path);
@@ -92,7 +96,7 @@ export async function createEmptyNovelStorage(filename) {
   } finally {
     raw.close();
   }
-  const storage = await openNovelStorage(path);
+  const storage = await openNovelStorage(path, { dataRoot });
   try {
     storage.fs.mkdirSync('/workspace/novels', { recursive: true });
     storage.fs.mkdirSync('/tmp', { recursive: true });
@@ -101,13 +105,14 @@ export async function createEmptyNovelStorage(filename) {
   }
 }
 
-export async function openNovelStorage(filename) {
-  const allowed = resolve('data/official-validation/integration');
+export async function openNovelStorage(filename, { dataRoot } = {}) {
+  const provider = resolve('data/official-validation/integration');
+  const allowed = dataRoot ? resolve(dataRoot) : provider;
   const path = resolve(filename);
   const rel = relative(allowed, path);
   if (!rel || rel.startsWith('..') || isAbsolute(rel) || !path.endsWith('.sqlite'))
     throw new Error('Only a dedicated isolated SQLite copy may be opened for writing.');
-  const { SQLiteWorkspaceProvider } = await import(pathToFileURL(resolve(allowed, 'vfs.mjs')));
+  const { SQLiteWorkspaceProvider } = await import(pathToFileURL(resolve(provider, 'vfs.mjs')));
   const raw = new Database(path, { fileMustExist: true });
   try {
     if (

@@ -11,7 +11,7 @@ try {
   if((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory -lt 4GB/1KB){throw 'Less than 4 GiB free; task not started.'}
   $commands=@{
     build='--max-old-space-size=384 cloud/selfhost/build.mjs'
-    integration='--max-old-space-size=192 cloud/selfhost/isolation.test.mjs'
+    integration='--max-old-space-size=192 cloud/selfhost/integration.mjs'
     browser='--max-old-space-size=192 cloud/selfhost/browser.test.mjs'
     protocol='--max-old-space-size=128 cloud/tests/run.mjs'
     format='--max-old-space-size=128 node_modules/prettier/bin/prettier.cjs --write cloud/selfhost/*.mjs cloud/official/novel/runtime.mjs cloud/official/novel/web.mjs cloud/official/novel/storage.mjs cloud/pages/public/novel-assets/application.css cloud/pages/public/novel-assets/application.mjs cloud/pages/public/novel-assets/manuscript.css cloud/pages/public/novel-assets/manuscript.mjs cloud/pages/public/novel-assets/studio-theme.mjs cloud/pages/public/novel-assets/studio.mjs cloud/pages/public/novel-assets/ui-icons.mjs cloud/tests/book-lifecycle-scenario.mjs README.md SECURITY.md .github/workflows/*.yml'

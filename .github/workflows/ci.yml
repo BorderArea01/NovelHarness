@@ -36,4 +36,5 @@ jobs:
           path: |
             test-results/ui-failure.png
             test-results/public-browser.json
+            test-results/mode-shared-failure.png
           retention-days: 1

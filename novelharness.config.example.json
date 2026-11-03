@@ -1,0 +1,6 @@
+{
+  "mode": "isolated",
+  "host": "127.0.0.1",
+  "port": 3210,
+  "maxVisitors": 2
+}

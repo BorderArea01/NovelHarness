@@ -19,25 +19,49 @@ export async function startOfficialNovel({
   staging = false,
   production = false,
   anonymous = false,
+  shared = false,
+  dataRoot,
   installationPrepared = false,
 }) {
   assert(!(staging && production));
   assert(!anonymous || (!staging && !production));
+  assert(!shared || (!staging && !production && !anonymous));
+  assert(!shared || dataRoot, 'Shared deployment requires an explicit registered store.');
+  assert(!dataRoot || anonymous || shared);
+  let sharedAudience;
   assert(
     requestedMode === undefined || ['enabled', 'disabled', 'removed'].includes(requestedMode),
     'Invalid isolated plugin lifecycle state.',
   );
-  const allowed = resolve('data/official-validation/integration');
+  const allowed = resolve(dataRoot ?? 'data/official-validation/integration');
   const rel = relative(allowed, resolve(home));
   assert(rel && !rel.startsWith('..') && !isAbsolute(rel));
-  if (anonymous) {
-    assert(/^visitors[/\\][a-f0-9]{64}[/\\]home$/.test(rel));
+  if (!anonymous && !shared) {
+    try {
+      await readFile(resolve(home, '../.novelharness-store.json'));
+      throw new Error('此数据目录已由统一部署入口管理；请使用配置模式启动，未启动第二个写入者。');
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+  }
+  if (anonymous || shared) {
+    assert(dataRoot ? rel === 'home' : /^visitors[/\\][a-f0-9]{64}[/\\]home$/.test(rel));
     assert.equal(resolve(sqlite), resolve(home, '../main.sqlite'));
     assert.equal(
       JSON.parse(await readFile('.anonymous-host.json', 'utf8')).format,
       'novelharness-anonymous-v1',
     );
-    assert(!fixtureEndpoint, 'Anonymous deployment does not inherit fixture credentials.');
+    assert(!fixtureEndpoint, 'Self-hosted deployment does not inherit fixture credentials.');
+    if (dataRoot) {
+      const marker = resolve(dataRoot, shared ? '.novelharness-store.json' : '../.novelharness-store.json');
+      const store = JSON.parse(await readFile(marker, 'utf8'));
+      assert.equal(store.mode, shared ? 'shared' : 'isolated');
+      assert.equal(store.format, 'novelharness-store-v1');
+      if (shared) {
+        sharedAudience = store.authAuthority ?? 'localhost';
+        assert(/^localhost(?::[0-9]{1,5})?$/.test(sharedAudience), 'Invalid stored authentication audience.');
+      }
+    }
   } else assert(!installationPrepared);
   if (production) {
     assert(!fixtureEndpoint, 'Production credentials cannot be sent to a fixture.');
@@ -62,7 +86,7 @@ export async function startOfficialNovel({
     const imported = JSON.parse(await readFile(join(home, 'configuration-import.json'), 'utf8'));
     assert.equal(imported.status, 'ready', 'An incomplete offline configuration import cannot boot.');
     assert(
-      staging || production || imported.credentialPolicy !== 'offline-only',
+      staging || production || shared || imported.credentialPolicy !== 'offline-only',
       'Real credential copies are for offline verification only.',
     );
   } catch (error) {
@@ -82,7 +106,7 @@ export async function startOfficialNovel({
     HOME: join(home, 'user'),
     APPDATA: join(home, 'user/AppData/Roaming'),
     LOCALAPPDATA: join(home, 'user/AppData/Local'),
-    NOVEL_STAGE_MANAGEMENT_LOCK: staging || production || anonymous ? 'preparing' : '',
+    NOVEL_STAGE_MANAGEMENT_LOCK: staging || production || anonymous || shared ? 'preparing' : '',
   });
   await installStagingManagementGuard();
   // This laboratory never accepts real provider credentials or remote model
@@ -111,7 +135,11 @@ export async function startOfficialNovel({
     await installHostCompatibility();
     await installNovelClientBase();
   }
-  const { profile, bundle, mode: purgeMode } = await configureNovelProfile({ home, modules, requestedMode });
+  const {
+    profile,
+    bundle,
+    mode: purgeMode,
+  } = await configureNovelProfile({ home, modules, requestedMode, dataRoot });
   let patches = [];
   if (purgeMode !== 'removed' && !installationPrepared) {
     const backup = await core.backupAll(process.env.DSH_BASE);
@@ -119,7 +147,7 @@ export async function startOfficialNovel({
     patches = await core.applyPatches(process.env.DSH_BASE);
   }
   if (!installationPrepared) await installPreStepCompatibility();
-  const storage = await initializeNovelStorage(sqlite);
+  const storage = await initializeNovelStorage(sqlite, { dataRoot });
   const file = (name) => JSON.stringify(pathToFileURL(resolve('cloud/official/novel', name + '.mjs')).href);
   await writeFile(
     join(bundle, 'cordis.patch.yml'),
@@ -184,6 +212,11 @@ export async function startOfficialNovel({
       '  config:',
       '    openBrowser: false',
       '    printUrl: false',
+      // The novel shell owns first use. Keep the original model settings and
+      // explicit credential dialog, without a second login modal over the book.
+      ...(anonymous || shared
+        ? ['- id: ui-settings-models', '  config:', '    credentialOnboarding: false']
+        : []),
       '- id: workspace-controller',
       '  config:',
       '    documentsDirectory: /workspace',
@@ -209,7 +242,7 @@ export async function startOfficialNovel({
   const { loadLayeredEnv } = await import(
     pathToFileURL(join(modules, '@deepseek-ai/dsh-app-boot/lib/index.js'))
   );
-  if (staging || production || anonymous) process.env.NOVEL_STAGE_MANAGEMENT_LOCK = 'locked';
+  if (staging || production || anonymous || shared) process.env.NOVEL_STAGE_MANAGEMENT_LOCK = 'locked';
   const { runProfile } = await import(pathToFileURL(join(modules, '@deepseek-ai/dsh/lib/profile-boot.js')));
   // Import third-party plugin code only AFTER private env setup and management
   // guards; early static imports would cache its unguarded management modules.
@@ -226,7 +259,7 @@ export async function startOfficialNovel({
       configureHost: installAuthoringBoundary,
       args: ['--host', '127.0.0.1', '--port', '0', '--no-open'],
     });
-    if (staging || production || anonymous) process.env.NOVEL_STAGE_MANAGEMENT_LOCK = 'locked';
+    if (staging || production || anonymous || shared) process.env.NOVEL_STAGE_MANAGEMENT_LOCK = 'locked';
     return {
       ...app,
       storage,
@@ -235,6 +268,9 @@ export async function startOfficialNovel({
       staging,
       production,
       anonymous,
+      shared,
+      sharedAudience,
+      dataRoot,
       origin: app.ctx.get('webServer').getOrigin(),
     };
   } catch (error) {

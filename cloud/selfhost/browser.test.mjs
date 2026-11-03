@@ -5,9 +5,11 @@ import { chromium } from '@playwright/test';
 import { startAnonymousServer } from './server.mjs';
 import { makeBookBundle } from '../pages/public/novel-assets/bundle.mjs';
 import { verifyWritingUi } from './ui-scenario.mjs';
+import { verifySharedUi } from './shared-ui-scenario.mjs';
+import { clickSidebarEntry } from '../tests/editor-client.mjs';
 
 await mkdir('test-results', { recursive: true });
-let app, browser;
+let app, browser, failure;
 const identities = [],
   report = { passed: false, modelRequests: 0 };
 try {
@@ -19,8 +21,16 @@ try {
       : {}),
     args: ['--disable-background-networking', '--disable-extensions', '--js-flags=--max-old-space-size=192'],
   });
-  const a = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'zh-CN' });
-  const b = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
+  const a = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    locale: 'zh-CN',
+    timezoneId: 'Asia/Shanghai',
+  });
+  const b = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    locale: 'zh-CN',
+    timezoneId: 'Asia/Shanghai',
+  });
   for (const context of [a, b]) {
     await context.route('**/*', (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -48,6 +58,10 @@ try {
       ...(await context.cookies())
         .filter((c) => c.name.startsWith('novelharness_'))
         .map((c) => c.value.split('.')[0]),
+    );
+    await writeFile(
+      'test-results/public-browser-owners.json',
+      JSON.stringify({ synthetic: true, identities }),
     );
   }
   const prose =
@@ -135,34 +149,69 @@ try {
     await page.screenshot({ path: 'test-results/public-' + (i ? 'mobile' : 'desktop') + '.png' });
     assert(frames > 0, 'Native streaming WebSocket did not receive frames.');
     if (i === 0) {
-      try { report.ui = await verifyWritingUi({ page, context, origin: app.origin, book: bundle.manifest, prose }); }
-      catch (error) {
+      try {
+        report.ui = await verifyWritingUi({
+          page,
+          context,
+          origin: app.origin,
+          book: bundle.manifest,
+          prose,
+        });
+      } catch (error) {
         // This browser contains synthetic fixtures only. Keep UI state, never
         // cookies, credentials, network headers or conversation contents.
-        console.error('Synthetic UI failure:', JSON.stringify(await page.evaluate(() => ({
-          search: document.querySelector('#book-search')?.value,
-          searchCount: document.querySelectorAll('#book-search').length,
-          cards: [...document.querySelectorAll('.book')].map(e => ({ title: e.querySelector('h3')?.textContent, hidden: e.hidden, display: getComputedStyle(e).display })),
-          status: document.querySelector('#status')?.textContent,
-        }))));
+        console.error(
+          'Synthetic UI failure:',
+          JSON.stringify(
+            await page.evaluate(() => ({
+              search: document.querySelector('#book-search')?.value,
+              searchCount: document.querySelectorAll('#book-search').length,
+              cards: [...document.querySelectorAll('.book')].map((e) => ({
+                title: e.querySelector('h3')?.textContent,
+                hidden: e.hidden,
+                display: getComputedStyle(e).display,
+              })),
+              status: document.querySelector('#status')?.textContent,
+            })),
+          ),
+        );
         await page.screenshot({ path: 'test-results/ui-failure.png' });
         throw error;
       }
     }
+    await clickSidebarEntry(page, 'link', '数据与访问');
+    await page.getByRole('heading', { name: '访客独立空间', exact: true }).waitFor();
+    assert.equal(await page.getByText('修改登录 PIN', { exact: true }).count(), 0);
+    await page.screenshot({ path: 'test-results/mode-isolated-' + (i ? 'mobile' : 'desktop') + '.png' });
   }
+  await a.close();
+  await b.close();
+  await app.close();
+  app = null;
+  report.sharedUi = await verifySharedUi(browser);
   report.layouts = [1280, 390];
   report.webSocket = true;
   report.passed = true;
+} catch (error) {
+  failure = error;
 } finally {
-  await browser?.close();
-  await app?.close();
-  for (const id of identities) {
-    assert(/^[a-f0-9]{64}$/.test(id));
-    await rm(resolve('data/anonymous-runtime/data/official-validation/integration/visitors', id), {
-      recursive: true,
-      force: true,
-    });
+  try {
+    await browser?.close();
+    await app?.close();
+  } catch (error) {
+    failure ??= error;
+    report.cleanupPending = identities;
   }
+  if (!report.cleanupPending)
+    for (const id of identities) {
+      assert(/^[a-f0-9]{64}$/.test(id));
+      await rm(resolve('data/anonymous-runtime/data/official-validation/integration/visitors', id), {
+        recursive: true,
+        force: true,
+      });
+    }
+  if (failure) report.passed = false;
   await writeFile('test-results/public-browser.json', JSON.stringify(report));
 }
 console.log(JSON.stringify(report));
+if (failure) throw failure;

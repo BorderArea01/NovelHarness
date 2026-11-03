@@ -4,7 +4,10 @@
   "type": "module",
   "version": "5.0.0",
   "license": "GPL-3.0-only",
-  "repository": { "type": "git", "url": "https://github.com/BorderArea01/NovelHarness.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BorderArea01/NovelHarness.git"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -14,15 +17,15 @@
   },
   "scripts": {
     "repo:setup": "node scripts/install-git-guard.mjs",
-    "dev": "concurrently -n server,web -c blue,green \"npm run dev -w @novel-writer/server\" \"npm run dev -w @novel-writer/web\"",
+    "dev": "npm start",
     "build": "node --max-old-space-size=384 cloud/selfhost/build.mjs",
     "build:public": "node --max-old-space-size=384 cloud/selfhost/build.mjs",
     "build:legacy": "npm run build -w @novel-writer/shared && npm run build -w @novel-writer/web && npm run build -w @novel-writer/server",
     "start": "node --max-old-space-size=192 cloud/selfhost/server.mjs",
     "start:public": "node --max-old-space-size=192 cloud/selfhost/server.mjs",
     "start:legacy": "node apps/server/dist/index.js",
-    "test:public": "node --test cloud/selfhost/identity.test.mjs",
-    "test:public:integration": "node --max-old-space-size=192 cloud/selfhost/isolation.test.mjs",
+    "test:public": "node --test --test-concurrency=1 cloud/selfhost/identity.test.mjs cloud/selfhost/config.test.mjs cloud/selfhost/adopt-store.test.mjs",
+    "test:public:integration": "node --max-old-space-size=192 cloud/selfhost/integration.mjs",
     "test:public:browser": "node --max-old-space-size=192 cloud/selfhost/browser.test.mjs",
     "start:background": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-server.ps1",
     "autostart:install": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/install-autostart.ps1",

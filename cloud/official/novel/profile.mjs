@@ -1,7 +1,7 @@
 // Native DSH layering: generated host defaults are a bundle; the editable
 // profile patch belongs to the operator and is never regenerated on startup.
 import assert from 'node:assert/strict';
-import { mkdir, readFile, realpath, lstat, symlink, unlink } from 'node:fs/promises';
+import { mkdir, readFile, realpath, lstat, symlink, unlink, readlink } from 'node:fs/promises';
 import { resolve, join, relative, isAbsolute } from 'node:path';
 import { parse, stringify } from 'yaml';
 import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write';
@@ -18,7 +18,7 @@ async function json(path) {
     throw error;
   }
 }
-async function linkPrivate(parent, name, target, remove = false) {
+async function linkPrivate(parent, name, target, remove = false, owned) {
   const path = join(parent, name);
   let stat;
   try {
@@ -28,9 +28,25 @@ async function linkPrivate(parent, name, target, remove = false) {
   }
   if (stat) {
     assert(stat.isSymbolicLink(), 'Managed dependency path is not a private junction.');
-    assert.equal(await realpath(path), await realpath(target), 'Managed dependency target changed.');
-    if (remove) await unlink(path); // Unlink the verified junction, never its target.
+    const raw = await readlink(path);
+    let matches = false;
+    try {
+      matches = (await realpath(path)) === (await realpath(target));
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
+    if (!matches) {
+      assert(owned && owned[name] === raw, 'Managed dependency target changed without ownership proof.');
+      // A stopped, exclusively locked data store may move between immutable
+      // installations. Rebind only the previously recorded managed junction.
+      await unlink(path);
+      if (!remove) await symlink(target, path, 'junction');
+    } else if (remove) await unlink(path); // Never recurse into its target.
   } else if (!remove) await symlink(target, path, 'junction');
+  if (owned) {
+    if (remove) delete owned[name];
+    else owned[name] = await readlink(path);
+  }
 }
 function purgeRow(row) {
   return row?.id === 'dsh-purge' || row?.name === 'dsh-purge';
@@ -44,8 +60,8 @@ function stripPurge(rows) {
   });
 }
 
-export async function configureNovelProfile({ home, modules, requestedMode }) {
-  const rel = relative(resolve('data/official-validation/integration'), resolve(home));
+export async function configureNovelProfile({ home, modules, requestedMode, dataRoot }) {
+  const rel = relative(resolve(dataRoot ?? 'data/official-validation/integration'), resolve(home));
   assert(rel && !rel.startsWith('..') && !isAbsolute(rel));
   const profile = join(home, 'profiles', NOVEL_PROFILE),
     bundle = join(profile, 'host-bundle');
@@ -149,8 +165,29 @@ export async function configureNovelProfile({ home, modules, requestedMode }) {
   );
   const nodeModules = join(profile, 'node_modules');
   await mkdir(nodeModules, { recursive: true });
-  await linkPrivate(nodeModules, hostBundle, bundle);
-  await linkPrivate(nodeModules, 'novel-harness-bridge', join(modules, 'novel-harness-bridge'));
-  await linkPrivate(nodeModules, 'dsh-purge', join(modules, 'dsh-purge'), mode === 'removed');
+  const ownershipPath = join(profile, '.novelharness-dependencies.json');
+  let owned;
+  if (dataRoot) {
+    const record = await json(ownershipPath);
+    assert(
+      !record ||
+        (record.format === 'novelharness-profile-dependencies-v1' &&
+          record.targets &&
+          typeof record.targets === 'object' &&
+          !Array.isArray(record.targets) &&
+          Object.values(record.targets).every((target) => typeof target === 'string')),
+      'Unknown managed dependency ledger.',
+    );
+    owned = record?.targets ?? {};
+  }
+  await linkPrivate(nodeModules, hostBundle, bundle, false, owned);
+  await linkPrivate(nodeModules, 'novel-harness-bridge', join(modules, 'novel-harness-bridge'), false, owned);
+  await linkPrivate(nodeModules, 'dsh-purge', join(modules, 'dsh-purge'), mode === 'removed', owned);
+  if (owned)
+    await writeFileAtomic(
+      ownershipPath,
+      JSON.stringify({ format: 'novelharness-profile-dependencies-v1', targets: owned }),
+      { mode: 0o600 },
+    );
   return { profile, bundle, mode };
 }

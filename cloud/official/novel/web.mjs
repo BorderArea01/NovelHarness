@@ -498,7 +498,7 @@ export async function startNovelWeb(
         ...(!['GET', 'HEAD'].includes(req.method) ? { body: Readable.toWeb(req), duplex: 'half' } : {}),
       });
       const response =
-        (staging || anonymous) && url.pathname.startsWith('/__host-assets/')
+        (staging || production || anonymous) && url.pathname.startsWith('/__host-assets/')
           ? await env.ASSETS.fetch(request)
           : await handleRequest({ request, env, rewriteHtml });
       mark('response', url.pathname, response.status);

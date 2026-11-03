@@ -134,8 +134,21 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
     await page.screenshot({ path: 'test-results/public-' + (i ? 'mobile' : 'desktop') + '.png' });
     assert(frames > 0, 'Native streaming WebSocket did not receive frames.');
-    if (i === 0)
-      report.ui = await verifyWritingUi({ page, context, origin: app.origin, book: bundle.manifest, prose });
+    if (i === 0) {
+      try { report.ui = await verifyWritingUi({ page, context, origin: app.origin, book: bundle.manifest, prose }); }
+      catch (error) {
+        // This browser contains synthetic fixtures only. Keep UI state, never
+        // cookies, credentials, network headers or conversation contents.
+        console.error('Synthetic UI failure:', JSON.stringify(await page.evaluate(() => ({
+          search: document.querySelector('#book-search')?.value,
+          searchCount: document.querySelectorAll('#book-search').length,
+          cards: [...document.querySelectorAll('.book')].map(e => ({ title: e.querySelector('h3')?.textContent, hidden: e.hidden, display: getComputedStyle(e).display })),
+          status: document.querySelector('#status')?.textContent,
+        }))));
+        await page.screenshot({ path: 'test-results/ui-failure.png' });
+        throw error;
+      }
+    }
   }
   report.layouts = [1280, 390];
   report.webSocket = true;

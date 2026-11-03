@@ -19,3 +19,11 @@ jobs:
       - run: npm run test:public:integration
       - run: npx playwright install --with-deps chromium
       - run: npm run test:public:browser
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: synthetic-ui-failure
+          path: |
+            test-results/ui-failure.png
+            test-results/public-browser.json
+          retention-days: 1

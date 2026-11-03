@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { visitorIdentity, checkOrigin } from './identity.mjs';
+import { visitorIdentity, checkOrigin, sharedCookies } from './identity.mjs';
 
 test('unguessable signed visitor identity is scoped to one deployment', () => {
   const a = visitorIdentity('test-a', 'first'),
@@ -16,6 +16,25 @@ test('unguessable signed visitor identity is scoped to one deployment', () => {
   assert.match(cookie, /HttpOnly; SameSite=Strict/);
   assert.match(cookie, /; Secure$/);
   assert.notEqual(a.issue(), value);
+});
+
+test('private deployments on the same host have distinct cookies; legacy migration is explicit and logout clears it', () => {
+  const a = sharedCookies('owner-a', ['novel_stage_owner', 'novel_stage_pin'], 'store-a');
+  const b = sharedCookies('owner-b', undefined, 'store-b');
+  const issued = a.write('dsh_edge_owner=one; Path=/; HttpOnly', true);
+  assert.match(issued[0], /^__Host-novelharness_owner_/);
+  assert.match(issued[0], /; Secure$/);
+  assert.equal(b.read(issued[0], true), 'dsh_edge_owner=; novel_pin=');
+  assert.equal(
+    sharedCookies('owner-a', undefined, 'cloned-store').read(issued[0], true),
+    'dsh_edge_owner=; novel_pin=',
+  );
+  assert.equal(
+    a.read('__Host-novel_stage_owner=old; __Host-novel_stage_pin=gate', true),
+    'dsh_edge_owner=old; novel_pin=gate',
+  );
+  assert.match(issued[1], /__Host-novel_stage_owner=;.*Max-Age=0/);
+  assert.equal(b.read('__Host-novel_stage_owner=old', true), 'dsh_edge_owner=; novel_pin=');
 });
 test('cross-origin HTTP and WebSocket requests cannot select a visitor runtime', () => {
   const origin = 'https://novels.example';

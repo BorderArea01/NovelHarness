@@ -3,9 +3,12 @@ import { cp, mkdir, readFile, writeFile, symlink, lstat, rm } from 'node:fs/prom
 import { resolve, join } from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { loadDeploymentConfig } from './config.mjs';
+import { ensureInstallationIdle } from './installation-lease.mjs';
 
-const root = resolve('data/anonymous-runtime');
+const root = (await loadDeploymentConfig()).runtimeDirectory;
 await mkdir(root, { recursive: true });
+await ensureInstallationIdle(root);
 try {
   const running = JSON.parse(await readFile(join(root, 'running.json'), 'utf8'));
   try {
@@ -90,4 +93,4 @@ await rm(join(root, 'data/official-validation/integration/visitors', '0'.repeat(
   recursive: true,
   force: true,
 });
-console.log('Anonymous edition ready. Start with npm run start:public.');
+console.log('NovelHarness ready. Start with npm start; NOVEL_MODE selects isolated or shared.');

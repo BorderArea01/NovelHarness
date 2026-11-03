@@ -4,17 +4,38 @@ import { startOfficialNovel } from '../official/novel/runtime.mjs';
 import { createEmptyNovelStorage } from '../official/novel/storage.mjs';
 import { startNovelWeb } from '../official/novel/web.mjs';
 
-const id = process.argv[2];
-if (!/^[a-f0-9]{64}$/.test(id) || !process.send)
-  throw new Error('Visitor runtime requires the anonymous gateway.');
-const root = resolve('data/official-validation/integration/visitors', id);
+const mode = process.argv[2],
+  id = process.argv[3];
+const shared = mode === 'shared';
+if (
+  !['isolated', 'shared'].includes(mode) ||
+  !(shared ? id === 'shared' : /^[a-f0-9]{64}$/.test(id)) ||
+  !process.send
+)
+  throw new Error('Writing runtime requires the configured gateway.');
+const root = shared ? resolve(process.argv[4]) : resolve(process.argv[4], id);
 const home = join(root, 'home');
+let app, web;
+// Register before the first asynchronous boot step. If the gateway dies during
+// initialization, a half-started worker must not outlive its data-directory lock.
+process.once('disconnect', async () => {
+  if (!app) process.exit(0);
+  try {
+    await web?.close();
+    await app.shutdown.shutdown(0);
+    app.storage.close();
+  } finally {
+    process.exit(0);
+  }
+});
 await mkdir(home, { recursive: true, mode: 0o700 });
-await createEmptyNovelStorage(join(root, 'main.sqlite'));
-const app = await startOfficialNovel({
+await createEmptyNovelStorage(join(root, 'main.sqlite'), { dataRoot: root });
+app = await startOfficialNovel({
   home,
   sqlite: join(root, 'main.sqlite'),
-  anonymous: true,
+  anonymous: !shared,
+  shared,
+  dataRoot: root,
   installationPrepared: true,
 });
 // Apply at the native dispatcher so HTTP and WebSocket RPC share the boundary.
@@ -26,8 +47,9 @@ const prepareInvocation = gateway.prepareInvocation.bind(gateway);
 gateway.prepareInvocation = function (request, ...args) {
   const endpoint = request.namespace + '/' + request.method;
   if (
-    request.namespace === 'terminal' ||
-    ['commands/execute', 'settings/openSettingsDocument', 'session/openWorkspacePath'].includes(endpoint)
+    !shared &&
+    (request.namespace === 'terminal' ||
+      ['commands/execute', 'settings/openSettingsDocument', 'session/openWorkspacePath'].includes(endpoint))
   )
     throw new RemoteError(
       'remote-access/denied',
@@ -52,11 +74,20 @@ gateway.prepareInvocation = function (request, ...args) {
   }
   return prepareInvocation(request, ...args);
 };
-let web;
 process.on('message', async (message) => {
   if (message?.type === 'start' && !web) {
-    web = await startNovelWeb(app, { ownerKey: message.key, home });
-    process.send({ type: 'ready', origin: web.origin });
+    try {
+      web = await startNovelWeb(app, { ownerKey: message.key, home, initialPin: message.initialPin });
+      process.send({ type: 'ready', origin: web.origin });
+    } catch (error) {
+      process.send({
+        type: 'failed',
+        code: error.code === 'PIN_SETUP_REQUIRED' ? error.code : 'START_FAILED',
+      });
+      await app.shutdown.shutdown(0);
+      app.storage.close();
+      process.exit(1);
+    }
   } else if (message?.type === 'idle') {
     process.send({
       type: 'idle',
@@ -79,10 +110,5 @@ process.on('message', async (message) => {
     app.storage.close();
     process.exit(0);
   }
-});
-process.on('disconnect', async () => {
-  await web?.close();
-  await app.shutdown.shutdown(0);
-  process.exit(0);
 });
 process.send({ type: 'booted' });

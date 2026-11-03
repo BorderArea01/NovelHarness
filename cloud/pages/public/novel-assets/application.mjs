@@ -544,15 +544,15 @@ export function installApplication(ctx, React, { createPortal } = {}) {
         'a',
         {
           href: '/account/',
-          'aria-label': anonymous ? '访客数据' : '账号与 PIN',
-          title: anonymous ? '访客数据' : '账号与 PIN',
+          'aria-label': '数据与访问',
+          title: '数据与访问',
           onClick: (e) => {
             e.preventDefault();
             navigation.account();
           },
         },
         icon(React, 'user'),
-        wide ? h('span', null, anonymous ? '访客数据' : '账号与 PIN') : null,
+        wide ? h('span', null, '数据与访问') : null,
       ),
     );
   }
@@ -744,16 +744,74 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       ),
     );
   }
+  function AccountHeading() {
+    return h(
+      'header',
+      { className: 'novel-app-heading' },
+      h('h1', null, '数据与访问'),
+      h(
+        'button',
+        { type: 'button', onClick: () => navigation.library() },
+        icon(React, 'library'),
+        '返回书库',
+      ),
+    );
+  }
+  function SpaceSummary() {
+    return h(
+      'section',
+      { className: 'novel-space-summary', 'aria-label': '当前写作空间' },
+      h(
+        'div',
+        { className: 'novel-space-heading' },
+        h('h2', null, anonymous ? '访客独立空间' : '私人共享空间'),
+        h('span', { className: 'novel-mode-badge' }, anonymous ? '浏览器识别' : 'PIN 登录'),
+      ),
+      h(
+        'p',
+        null,
+        anonymous
+          ? '你的书稿、对话和模型配置与其他访客分开保存。'
+          : '登录后的电脑和手机共用书稿、对话与模型配置。',
+      ),
+      h(
+        'dl',
+        { className: 'novel-space-facts' },
+        h(
+          'div',
+          null,
+          h('dt', null, '访问凭证'),
+          h('dd', null, anonymous ? '当前浏览器 Cookie' : '你设置的登录 PIN'),
+        ),
+        h(
+          'div',
+          null,
+          h('dt', null, '换设备'),
+          h('dd', null, anonymous ? '进入新的独立空间' : '输入 PIN，继续创作'),
+        ),
+      ),
+    );
+  }
   function Account() {
     if (anonymous)
       return h(
         'main',
-        { className: 'novel-application novel-account', 'aria-label': '访客数据' },
-        h('h1', null, '你的独立写作空间'),
-        h('p', null, '书稿、对话与模型配置只属于当前访客，不与其他访客共享。'),
-        h('p', null, '浏览器 Cookie 是访问凭证。换浏览器、换设备或清除网站数据后，不会自动找回此空间。'),
-        h('p', null, '请在小说库定期导出作品备份。部署者可管理服务器数据，此功能不提供端到端加密。'),
-        h('button', { type: 'button', onClick: () => navigation.library() }, '返回小说库'),
+        { className: 'novel-application novel-account', 'aria-label': '数据与访问' },
+        h(AccountHeading),
+        h(SpaceSummary),
+        h(
+          'section',
+          { className: 'novel-account-note' },
+          h('h2', null, '保留访问凭证'),
+          h('p', null, '请保留当前浏览器的网站数据。清除 Cookie 后不会自动找回原空间，也无法通过 PIN 找回。'),
+        ),
+        h(
+          'section',
+          { className: 'novel-account-note' },
+          h('h2', null, '作品备份'),
+          h('p', null, '在书库的「管理作品」中导出备份。单本备份不含原生对话和全局模型配置。'),
+          h('p', { className: 'novel-app-hint' }, '部署者仍可管理服务器数据，此空间不提供端到端加密。'),
+        ),
       );
     const [configured, setConfigured] = React.useState(null),
       [message, setMessage] = React.useState('正在检查账号…'),
@@ -801,6 +859,8 @@ export function installApplication(ctx, React, { createPortal } = {}) {
         await call(data);
         setConfigured(true);
         form.reset();
+        const disclosure = form.closest('details');
+        if (disclosure) disclosure.open = false;
         setMessage('PIN 已保存，书稿、对话与模型配置未改动。');
       } catch (error) {
         setMessage(error.name === 'TimeoutError' ? '请求超时；如刚保存，请尝试新 PIN。' : error.message);
@@ -828,43 +888,44 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       );
     return h(
       'main',
-      { className: 'novel-application novel-account', 'aria-label': '账号' },
-      h(
-        'header',
-        { className: 'novel-app-heading' },
-        h('h1', null, '登录 PIN'),
-        h(
-          'a',
-          {
-            href: '/novels/',
-            onClick: (event) => {
-              event.preventDefault();
-              navigation.library();
-            },
-          },
-          '← 小说库',
-        ),
-      ),
+      { className: 'novel-application novel-account', 'aria-label': '数据与访问' },
+      h(AccountHeading),
+      h(SpaceSummary),
       configured === null
         ? null
         : h(
-            'form',
-            { id: 'pin-form', onSubmit: submit },
-            configured ? input('current-pin', 'currentPin', '当前 PIN') : null,
-            input('new-pin', 'newPin', '新 PIN'),
-            input('confirm-pin', 'confirmPin', '再次输入新 PIN'),
+            'details',
+            { className: 'novel-access-details', open: !configured },
+            h('summary', null, configured ? '修改登录 PIN' : '设置登录 PIN'),
             h(
-              'button',
-              { id: 'save-pin', type: 'submit', disabled: busy },
-              configured ? '保存新 PIN' : '设置 PIN',
+              'form',
+              { id: 'pin-form', onSubmit: submit },
+              configured ? input('current-pin', 'currentPin', '当前 PIN') : null,
+              input('new-pin', 'newPin', '新 PIN'),
+              input('confirm-pin', 'confirmPin', '再次输入新 PIN'),
+              h(
+                'button',
+                { id: 'save-pin', type: 'submit', disabled: busy },
+                configured ? '保存新 PIN' : '设置 PIN',
+              ),
+              h(
+                'p',
+                { className: 'novel-app-hint' },
+                '4–12 位数字，建议至少 6 位。修改后其他设备需重新登录。',
+              ),
+              h(
+                'p',
+                { className: 'novel-app-hint' },
+                '忘记 PIN 时，可用部署数据目录中的 owner-key.txt 恢复。',
+              ),
             ),
-            h('p', { className: 'novel-app-hint' }, '4–12 位数字，建议至少 6 位。不会修改 DeepSeek 配置。'),
           ),
       h('p', { id: 'message', role: 'status', 'aria-live': 'polite' }, message),
       h(
-        'p',
-        { className: 'novel-app-hint' },
-        '修改后，其他设备下次请求或重新连接时需重新登录。忘记 PIN 可用主机 owner-key.txt 恢复。',
+        'section',
+        { className: 'novel-account-note' },
+        h('h2', null, '作品备份'),
+        h('p', null, '单本作品可在书库导出。完整的书稿、对话和配置由部署者备份数据目录。'),
       ),
       h('form', { method: 'post', action: '/api/auth/logout' }, h('button', { type: 'submit' }, '退出登录')),
     );

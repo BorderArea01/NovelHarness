@@ -47,22 +47,24 @@ async function boundedBody(request, limit) {
 
 export async function startNovelWeb(
   app,
-  { ownerKey, home, lanHosts = [], port = 0, publicOrigin = '', isPublished = () => true },
+  { ownerKey, home, lanHosts = [], port = 0, publicOrigin = '', isPublished = () => true, initialPin },
 ) {
   // This adapter is not a deployment switch. Production secrets cannot be
   // accidentally supplied to the present synthetic, loopback-only lab.
   const staging = app.staging === true;
   const production = app.production === true;
   const anonymous = app.anonymous === true;
+  const shared = app.shared === true;
   assert(
-    ownerKey.length >= 32 && (staging || production || anonymous || ownerKey.startsWith('fixture-only-')),
+    ownerKey.length >= 32 &&
+      (staging || production || anonymous || shared || ownerKey.startsWith('fixture-only-')),
   );
   assert(staging || production || (!lanHosts.length && port === 0));
   if (production) assert(new URL(publicOrigin).protocol === 'https:');
   assert(lanHosts.every((host) => /^\d{1,3}(\.\d{1,3}){3}$/.test(host)));
   assert(Number.isInteger(port) && port >= 0 && port < 65536);
   const root = resolve('data/official-validation/integration');
-  const homeRelative = relative(root, resolve(home));
+  const homeRelative = relative(resolve(app.dataRoot ?? root), resolve(home));
   assert(homeRelative && !homeRelative.startsWith('..') && !isAbsolute(homeRelative));
   const { novelAssetsRevision: revision } = JSON.parse(await readFile(join(root, 'baseline.json'), 'utf8'));
   assert(/^official-novel-[a-f0-9]{16}$/.test(revision));
@@ -100,6 +102,31 @@ export async function startNovelWeb(
     { DSH_EDGE_ACCESS_KEY: ownerKey, NOVEL_STORAGE_ROLE: 'host' },
   );
   await pin.ready;
+  if (shared && !pin.state.pin) {
+    if (typeof initialPin !== 'string' || !/^[0-9]{4,12}$/.test(initialPin)) {
+      db.close();
+      const error = new Error(
+        '首次启动私人模式需要设置 4–12 位数字 PIN。请设置 NOVEL_INITIAL_PIN，已有 PIN 不会被重设。',
+      );
+      error.code = 'PIN_SETUP_REQUIRED';
+      throw error;
+    }
+    const initialized = await pin.fetch(
+      new Request('https://pin.internal/', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'set',
+          recoveryAuthorized: true,
+          newPin: initialPin,
+          confirmPin: initialPin,
+          ip: 'local-initialization',
+        }),
+      }),
+    );
+    assert.equal(initialized.status, 200, 'Initial PIN configuration failed.');
+    await initialized.arrayBuffer();
+  }
   const host = app.ctx.get('novelHost');
   assert(host && app.ctx.get('fs'));
   host.env.DSH_EDGE_ACCESS_KEY = ownerKey;
@@ -139,7 +166,7 @@ export async function startNovelWeb(
     return text;
   };
   const incoming = (req) => {
-    if (anonymous && !equal(req.headers['x-novelharness-internal'], ownerKey)) return null;
+    if ((anonymous || shared) && !equal(req.headers['x-novelharness-internal'], ownerKey)) return null;
     if (production) return productionAuthority(req, { ownerKey, publicOrigin, port, authorities });
     if (!authorities.has(req.headers.host)) return null;
     const outside = new URL('http://' + req.headers.host);
@@ -150,7 +177,12 @@ export async function startNovelWeb(
     )
       return null;
     if (req.headers['sec-fetch-site'] === 'cross-site') return null;
-    return { outside, inside: staging ? internalOrigin(outside) : outside.origin };
+    // Shared browser credentials keep a stable internal audience across child
+    // restarts; the supervisor still verifies the real external origin.
+    return {
+      outside,
+      inside: shared ? 'http://' + app.sharedAudience : staging ? internalOrigin(outside) : outside.origin,
+    };
   };
   const trace = [];
   const mark = (phase, path, status) => {
@@ -260,7 +292,7 @@ export async function startNovelWeb(
         403,
       );
     if (
-      (staging || production || anonymous) &&
+      (staging || production || anonymous || shared) &&
       /^\/dsh-purge\/(apply|revert|uninstall|restart|update|drill-grant)(\/|$)/.test(url.pathname) &&
       request.method !== 'GET'
     )
@@ -390,7 +422,7 @@ export async function startNovelWeb(
       else if (/^\/worker\/shared\/(writing-context|writing-prompts)\.mjs$/.test(path))
         file = join(base, path.slice(1));
       else if (
-        (staging || production || anonymous) &&
+        (staging || production || anonymous || shared) &&
         /^\/__host-assets\/(crypto-boot\.js|crypto-runtime\.mjs)$/.test(path)
       )
         file = join(base, 'host-assets', path.slice('/__host-assets/'.length));
@@ -414,10 +446,12 @@ export async function startNovelWeb(
     mark('rewrite-read', '/');
     const asset = '/studio/' + revision + '/pages/public/novel-assets/';
     html = html.replace(/<title>[\s\S]*?<\/title>/i, '<title>小说工作台</title>');
-    if (staging || production || anonymous)
+    if (staging || production || anonymous || shared)
       html = html.replace('</head>', '<script src="/__host-assets/crypto-boot.js"></script></head>');
     if (staging) html = html.replace('<body', '<body data-novel-environment="lan-staging"');
     if (anonymous) html = html.replace('<body', '<body data-novel-auth="anonymous"');
+    if (anonymous || shared)
+      html = html.replace('<body', '<body data-novel-mode="' + (shared ? 'shared' : 'isolated') + '"');
     html = html.replace(/\b(src|href)="\.\//g, '$1="/');
     html = html.replace(
       '</head>',
@@ -469,7 +503,7 @@ export async function startNovelWeb(
         url.searchParams.has('token') ||
         (url.pathname.startsWith('/__') &&
           !(
-            (staging || production || anonymous) &&
+            (staging || production || anonymous || shared) &&
             /^\/__host-assets\/(crypto-boot\.js|crypto-runtime\.mjs)$/.test(url.pathname)
           ))
       ) {
@@ -484,7 +518,12 @@ export async function startNovelWeb(
             !['cf-connecting-ip', 'x-forwarded-host', 'x-forwarded-proto'].includes(key)
           )
             headers.append(key, value);
-      headers.set('cf-connecting-ip', req.socket.remoteAddress ?? 'unknown');
+      headers.set(
+        'cf-connecting-ip',
+        shared
+          ? String(req.headers['x-novelharness-peer'] ?? 'unknown')
+          : (req.socket.remoteAddress ?? 'unknown'),
+      );
       for (const name of ['x-novel-host-auth', 'x-novel-forwarded-origin', 'x-novel-forward-as'])
         headers.delete(name);
       headers.delete('x-novel-verification');
@@ -498,7 +537,7 @@ export async function startNovelWeb(
         ...(!['GET', 'HEAD'].includes(req.method) ? { body: Readable.toWeb(req), duplex: 'half' } : {}),
       });
       const response =
-        (staging || production || anonymous) && url.pathname.startsWith('/__host-assets/')
+        (staging || production || anonymous || shared) && url.pathname.startsWith('/__host-assets/')
           ? await env.ASSETS.fetch(request)
           : await handleRequest({ request, env, rewriteHtml });
       mark('response', url.pathname, response.status);

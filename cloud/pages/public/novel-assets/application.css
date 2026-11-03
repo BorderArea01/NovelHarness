@@ -1527,7 +1527,81 @@ body:has(.novel-desk[data-assistant='closed']) [data-testid='dsh-purge-launch'] 
   overflow: hidden;
 }
 .novel-account > * {
-  max-width: 540px;
+  max-width: 640px;
+}
+.novel-account .novel-app-heading {
+  max-width: 640px;
+}
+.novel-space-summary,
+.novel-access-details,
+.novel-account-note {
+  padding: 22px;
+  margin-block: 16px;
+  border: 1px solid var(--studio-line);
+  border-radius: 14px;
+  background: var(--dsw-alias-bg-layer-1);
+}
+.novel-space-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.novel-account h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+.novel-mode-badge {
+  padding: 4px 8px;
+  border: 1px solid var(--studio-line);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--studio-muted);
+}
+.novel-account p {
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.novel-account #message:empty {
+  display: none;
+}
+.novel-space-facts {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0 0;
+}
+.novel-space-facts > div {
+  display: grid;
+  grid-template-columns: 80px minmax(0, 1fr);
+  gap: 12px;
+  font-size: 14px;
+}
+.novel-space-facts dt {
+  color: var(--studio-muted);
+}
+.novel-space-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.novel-access-details > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: list-item;
+  align-content: center;
+  list-style-position: inside;
+  font-weight: 600;
+}
+@media (max-width: 600px) {
+  .novel-space-summary,
+  .novel-access-details,
+  .novel-account-note {
+    padding: 16px;
+  }
+  .novel-account .novel-app-heading {
+    align-items: flex-start;
+  }
 }
 .novel-account #pin-form label {
   display: block;

@@ -25,7 +25,13 @@ async function fingerprintTree(path) {
         .update(await readFile(file));
   }
 }
-for (const path of ['cloud/pages/public', 'cloud/pages/src', 'cloud/worker', 'cloud/official/novel'])
+for (const path of [
+  'cloud/pages/public',
+  'cloud/pages/src',
+  'cloud/worker',
+  'cloud/official/novel',
+  'cloud/selfhost',
+])
   await fingerprintTree(path);
 const revision = fingerprint.digest('hex');
 await prepareOfficialNovel({ sourceRelease: { release: source, revision } });
@@ -45,10 +51,15 @@ const welcomePath = resolve(
 const welcome = await readFile(welcomePath, 'utf8');
 await writeFile(
   welcomePath,
-  welcome.replace(
-    '登录 DeepSeek 账号，或添加 API Key，即可开始使用。你的项目和文件保存在本地。',
-    '添加你自己的 API Key 后即可使用 AI。作品保存在服务器的独立访客空间；请保留浏览器 Cookie 并定期导出备份。',
-  ),
+  welcome
+    .replace(
+      '登录 DeepSeek 账号，或添加 API Key，即可开始使用。你的项目和文件保存在本地。',
+      '配置模型 API Key 后即可开始创作。书稿与对话自动保存，空间信息见「数据与访问」。',
+    )
+    .replace(
+      '添加你自己的 API Key 后即可使用 AI。作品保存在服务器的独立访客空间；请保留浏览器 Cookie 并定期导出备份。',
+      '配置模型 API Key 后即可开始创作。书稿与对话自动保存，空间信息见「数据与访问」。',
+    ),
 );
 // Windows can hold native modules from this temporary home until process exit.
 // The parent removes it only after this process has fully terminated.

@@ -1,11 +1,40 @@
 import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 
 export const MODES = ['isolated', 'shared'];
+export function ingressMode(mode, publicOrigin, selected) {
+  const kind = selected ?? (publicOrigin ? 'reverse-proxy' : 'lan');
+  if (!['lan', 'reverse-proxy', 'cloudflare-vpc'].includes(kind))
+    throw new Error('ingress 只能是 lan、reverse-proxy 或 cloudflare-vpc。');
+  if ((kind === 'lan') === !!publicOrigin)
+    throw new Error('局域网模式不填 publicOrigin；公网转发必须填写 publicOrigin。');
+  if (kind === 'cloudflare-vpc' && (mode !== 'shared' || !publicOrigin.startsWith('https://')))
+    throw new Error('Cloudflare VPC 认证转发需要 shared 模式和 HTTPS publicOrigin。');
+  return kind;
+}
+export function storageDirectory(config) {
+  return resolve(
+    config.dataDirectory ??
+      join(
+        config.runtimeDirectory,
+        'data/official-validation/integration',
+        config.mode === 'shared' ? 'shared' : 'visitors',
+      ),
+  );
+}
 export function deploymentConfig(value = {}, env = {}, cwd = process.cwd()) {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('部署配置必须是 JSON 对象。');
-  const known = ['mode', 'host', 'port', 'publicOrigin', 'maxVisitors', 'runtimeDirectory', 'dataDirectory'];
+  const known = [
+    'mode',
+    'host',
+    'port',
+    'publicOrigin',
+    'ingress',
+    'maxVisitors',
+    'runtimeDirectory',
+    'dataDirectory',
+  ];
   for (const key of Object.keys(value)) if (!known.includes(key)) throw new Error('未知部署配置项：' + key);
   const mode = env.NOVEL_MODE ?? value.mode ?? 'isolated';
   if (!MODES.includes(mode)) throw new Error('NOVEL_MODE 只能是 isolated 或 shared。');
@@ -41,6 +70,7 @@ export function deploymentConfig(value = {}, env = {}, cwd = process.cwd()) {
     host,
     port,
     publicOrigin: publicOrigin ? new URL(publicOrigin).origin : '',
+    ingress: ingressMode(mode, publicOrigin, env.NOVEL_INGRESS ?? value.ingress),
     maxVisitors,
     runtimeDirectory,
     dataDirectory: directory === undefined ? undefined : resolve(cwd, directory),

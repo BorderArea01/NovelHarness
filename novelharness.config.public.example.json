@@ -1,0 +1,8 @@
+{
+  "mode": "shared",
+  "host": "0.0.0.0",
+  "port": 3210,
+  "ingress": "cloudflare-vpc",
+  "publicOrigin": "https://your-site.pages.dev",
+  "dataDirectory": "./data/private-writing-space"
+}

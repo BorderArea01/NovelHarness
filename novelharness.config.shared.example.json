@@ -1,0 +1,7 @@
+{
+  "mode": "shared",
+  "host": "0.0.0.0",
+  "port": 3210,
+  "ingress": "lan",
+  "dataDirectory": "./data/private-writing-space"
+}

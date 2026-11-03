@@ -23,6 +23,7 @@
     "build:legacy": "npm run build -w @novel-writer/shared && npm run build -w @novel-writer/web && npm run build -w @novel-writer/server",
     "start": "node --max-old-space-size=192 cloud/selfhost/server.mjs",
     "start:public": "node --max-old-space-size=192 cloud/selfhost/server.mjs",
+    "deployment:check": "node --max-old-space-size=128 cloud/selfhost/check-deployment.mjs",
     "start:legacy": "node apps/server/dist/index.js",
     "test:public": "node --test --test-concurrency=1 cloud/selfhost/identity.test.mjs cloud/selfhost/config.test.mjs cloud/selfhost/adopt-store.test.mjs",
     "test:public:integration": "node --max-old-space-size=192 cloud/selfhost/integration.mjs",

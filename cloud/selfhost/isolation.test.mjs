@@ -37,6 +37,9 @@ async function rpc(who, method, args) {
 }
 try {
   app = await startAnonymousServer({ port: 0, maxVisitors: 2 });
+  const hostDetails = await fetch(app.origin + '/api/deployment/details');
+  assert.equal(hostDetails.status, 404);
+  assert(!(await hostDetails.text()).includes('dataDirectory'));
   assert.deepEqual((await call(0, '/api/novels')).books, []);
   assert.deepEqual((await call(1, '/api/novels')).books, []);
   const bundle = await makeBookBundle(null, { title: '访客隔离测试', seed: '独立测试，不使用真实小说。' });
@@ -107,10 +110,17 @@ try {
     for (const value of jar.values()) {
       const id = value.split('.')[0];
       assert(/^[a-f0-9]{64}$/.test(id));
-      await rm(resolve('data/anonymous-runtime/data/official-validation/integration/visitors', id), {
-        recursive: true,
-        force: true,
-      });
+      await rm(
+        resolve(
+          process.env.NOVEL_RUNTIME_DIR ?? 'data/anonymous-runtime',
+          'data/official-validation/integration/visitors',
+          id,
+        ),
+        {
+          recursive: true,
+          force: true,
+        },
+      );
     }
   await writeFile(resolve('test-results/public-isolation.json'), JSON.stringify(report));
 }

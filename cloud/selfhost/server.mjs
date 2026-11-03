@@ -7,7 +7,8 @@ import { pipeline } from 'node:stream/promises';
 import { visitorIdentity, checkOrigin, sharedCookies } from './identity.mjs';
 import { productionAuthority } from '../official/novel/production-wire.mjs';
 import { claimDataDirectory, sharedOwnerKey, visitorSigningKeys } from './data-directory.mjs';
-import { loadDeploymentConfig } from './config.mjs';
+import { loadDeploymentConfig, ingressMode, storageDirectory } from './config.mjs';
+import { deploymentStatus } from './deployment-status.mjs';
 import { networkInterfaces } from 'node:os';
 import { initialPinForCli } from './initial-pin.mjs';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -18,13 +19,15 @@ export async function startSelfHostedServer({
   host = '127.0.0.1',
   publicOrigin,
   maxVisitors = 2,
-  runtime = resolve('data/anonymous-runtime'),
+  runtime = resolve(process.env.NOVEL_RUNTIME_DIR ?? 'data/anonymous-runtime'),
   mode = 'isolated',
   dataDirectory,
   initialPin,
+  ingress,
 } = {}) {
   if (!['isolated', 'shared'].includes(mode)) throw new Error('Invalid deployment mode.');
   const shared = mode === 'shared';
+  ingress = ingressMode(mode, publicOrigin || '', ingress);
   if (!Number.isInteger(maxVisitors) || maxVisitors < 1 || maxVisitors > 8)
     throw new Error('MAX_ACTIVE_VISITORS must be an integer from 1 to 8.');
   if (publicOrigin && !['http:', 'https:'].includes(new URL(publicOrigin).protocol))
@@ -35,9 +38,7 @@ export async function startSelfHostedServer({
   let lease, dataClaim, server, stopRuntime;
   const visitors = new Map();
   try {
-    const dataRoot = resolve(
-      dataDirectory ?? join(runtime, 'data/official-validation/integration', shared ? 'shared' : 'visitors'),
-    );
+    const dataRoot = storageDirectory({ dataDirectory, runtimeDirectory: runtime, mode });
     dataClaim = await claimDataDirectory(dataRoot, mode);
     const ownerKey = shared ? await sharedOwnerKey(dataRoot) : null;
     const storeMetadata = JSON.parse(await readFile(join(dataRoot, '.novelharness-store.json'), 'utf8'));
@@ -262,6 +263,8 @@ export async function startSelfHostedServer({
             changeRequiresRestart: true,
           }),
         );
+      if (req.url === '/api/deployment/details' && !shared)
+        return error(res, 404, '访客模式不公开部署主机的位置与网络配置。');
       try {
         let id = shared ? 'shared' : identity.read(req.headers.cookie);
         if (!id) {
@@ -279,6 +282,30 @@ export async function startSelfHostedServer({
           }
         };
         res.once('close', finish);
+        if (req.url === '/api/deployment/details') {
+          if (req.method !== 'GET') return error(res, 405, '部署信息只读；请在主机修改部署配置并重启。');
+          const proof = await fetch(entry.origin + '/api/auth/session', {
+            headers: headers(req, entry, outside),
+            signal: AbortSignal.timeout(10000),
+          });
+          if (!proof.ok || (await proof.json()).authenticated !== true) return error(res, 401, '请先登录。');
+          const details = deploymentStatus(
+            {
+              mode,
+              host,
+              port: server.address().port,
+              publicOrigin,
+              ingress,
+              dataDirectory: dataRoot,
+              runtimeDirectory: runtime,
+            },
+            [...directHosts]
+              .filter((h) => !/^(localhost|127\.0\.0\.1|\[::1\]):/.test(h))
+              .map((h) => 'http://' + h),
+          );
+          res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+          return res.end(JSON.stringify(details));
+        }
         const upstream = request(
           entry.origin + req.url,
           { method: req.method, headers: headers(req, entry, outside) },

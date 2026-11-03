@@ -162,6 +162,56 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
   );
   await shot('assistant-desktop');
   await overflow();
+  // Use a wide desk for the two-pane interaction, including expanded navigation.
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await waitResponsiveLayout(page);
+  const splitter = page.getByRole('separator', { name: '调整书稿与助手宽度', exact: true });
+  await expect(splitter).toBeVisible();
+  const assistant = page.getByRole('complementary', { name: '创作助手对话', exact: true });
+  const beforeWidth = (await assistant.boundingBox()).width;
+  const composer = page.locator('[contenteditable="true"]:not(.cm-content):visible').first();
+  await composer.fill('调整面板时保留的未发送创作要求');
+  const retainedNode = await assistant.evaluateHandle((node) => node.firstElementChild);
+  const handle = await splitter.boundingBox();
+  await page.mouse.move(handle.x + handle.width / 2, handle.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(handle.x - 140, handle.y + 100, { steps: 8 });
+  await page.mouse.up();
+  const resizedWidth = (await assistant.boundingBox()).width;
+  assert(resizedWidth > beforeWidth + 100, 'Dragging must widen the actual native assistant.');
+  assert.equal(
+    await assistant.evaluate((node, child) => node.firstElementChild === child, retainedNode),
+    true,
+  );
+  await expect(composer).toHaveText('调整面板时保留的未发送创作要求');
+  await splitter.focus();
+  await page.keyboard.press('ArrowRight');
+  assert((await assistant.boundingBox()).width < resizedWidth - 15);
+  const rememberedWidth = (await assistant.boundingBox()).width;
+  await page.getByRole('button', { name: '返回书稿', exact: true }).click();
+  await page.getByRole('button', { name: '创作助手', exact: true }).click();
+  await expect(splitter).toBeVisible();
+  assert(Math.abs((await assistant.boundingBox()).width - rememberedWidth) < 3);
+  // Cancel a captured drag instead of persisting an accidental change.
+  const again = await splitter.boundingBox();
+  await page.mouse.move(again.x + 5, again.y + 100);
+  await page.mouse.down();
+  await page.mouse.move(again.x - 100, again.y + 100);
+  await splitter.dispatchEvent('pointercancel');
+  await page.mouse.up();
+  assert(Math.abs((await assistant.boundingBox()).width - rememberedWidth) < 3);
+  await splitter.dblclick();
+  assert((await assistant.boundingBox()).width < rememberedWidth - 80);
+  await composer.fill('');
+  await retainedNode.dispose();
+  await shot('assistant-resized');
+  await page.setViewportSize({ width: 390, height: 900 });
+  await waitResponsiveLayout(page);
+  await expect(splitter).toBeHidden();
+  await expect(assistant).toBeVisible();
+  await overflow();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await waitResponsiveLayout(page);
   await page.getByRole('button', { name: '返回书稿', exact: true }).click();
   await clickSidebarEntry(page, 'button', '设置');
   const settings = page.getByRole('dialog', { name: '设置', exact: true });
@@ -188,5 +238,6 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
     saveVerified: true,
     layouts: [1280, 768, 390, 320],
     lightAndDark: true,
+    assistantDragAndKeyboard: true,
   };
 }

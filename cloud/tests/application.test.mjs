@@ -76,6 +76,7 @@ test('one native composer is portalled only into its own session host; toggling 
     useState: (value) => [value, () => {}],
     useEffect() {},
     useRef: (value) => ({ current: value }),
+    useId: () => 'synthetic-assistant-id',
     useCallback: (fn) => fn,
     useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
   };
@@ -169,6 +170,7 @@ test('unlinked historical conversations stay in the SAME shell, hidden until exp
     createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
     useEffect() {},
     useRef: (value) => ({ current: value }),
+    useId: () => 'synthetic-assistant-id',
     useCallback: (fn) => fn,
     useState: (value) => [value, () => {}],
     useSyncExternalStore: (_subscribe, snapshot) => snapshot(),
@@ -209,12 +211,16 @@ test('unlinked historical conversations stay in the SAME shell, hidden until exp
     const props = { useSessions: (select) => select(catalog), conversation: nativeConversation };
     const initial = Desk(props);
     assert.equal(initial.props['data-has-book'], 'false');
-    assert.equal(initial.children[1].children[1].props.hidden, true);
+    const assistantIn = (desk) =>
+      desk.children[1].children.find(
+        (node) => node?.type === 'aside' && node.props.className === 'novel-desk-assistant',
+      );
+    assert.equal(assistantIn(initial).props.hidden, true);
     navigation.dialogue();
     const opened = Desk(props);
     assert.equal(opened.children[1].children[0], null);
-    assert.equal(opened.children[1].children[1].props.hidden, false);
-    assert.equal(opened.children[1].children[1].children[0], nativeConversation);
+    assert.equal(assistantIn(opened).props.hidden, false);
+    assert.equal(assistantIn(opened).children[0], nativeConversation);
     const Sidebar = registered.get('novel.navigation');
     const sidebar = Sidebar({
       collapsed: false,
@@ -249,6 +255,7 @@ test('a cancelled older book-open cannot send a newer dialogue intent back to th
     createElement: (type, props, ...children) => ({ type, props: props ?? {}, children }),
     useEffect() {},
     useRef: (value) => ({ current: value }),
+    useId: () => 'synthetic-assistant-id',
     useCallback: (fn) => fn,
     useState: (value) => [value, () => {}],
     useSyncExternalStore: (_subscribe, snapshot) => snapshot(),

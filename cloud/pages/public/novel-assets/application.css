@@ -144,11 +144,58 @@
   min-height: 0;
 }
 .novel-desk-assistant {
-  flex: 0 0 clamp(330px, 32%, 460px);
+  flex: 0 0 var(--novel-assistant-width, clamp(330px, 32%, 460px));
   min-width: 330px;
   min-height: 0;
   border-left: 1px solid var(--studio-line);
   overflow: hidden;
+}
+.novel-assistant-splitter {
+  flex: 0 0 10px;
+  position: relative;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--dsw-alias-bg-base);
+  outline-offset: -2px;
+}
+.novel-assistant-splitter::after {
+  content: '';
+  position: absolute;
+  top: calc(50% - 20px);
+  left: 3px;
+  width: 3px;
+  height: 40px;
+  border-radius: 3px;
+  background: var(--studio-muted);
+  opacity: 0.5;
+}
+.novel-deployment details {
+  margin-top: 12px;
+}
+.novel-deployment summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  border: 1px solid var(--novel-control-border);
+  border-radius: 6px;
+  background: var(--novel-control-bg);
+}
+.novel-deployment .novel-space-heading button {
+  flex: none;
+  min-height: 36px;
+}
+.novel-deployment dd,
+.novel-deployment code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.novel-assistant-splitter:is(:hover, :focus-visible),
+.novel-desk-panes[data-resizing] .novel-assistant-splitter {
+  background: var(--novel-control-bg);
+  outline: 1px solid var(--novel-control-border);
+}
+.novel-desk-panes[data-resizing] {
+  cursor: col-resize;
+  user-select: none;
 }
 /* Native wide Markdown tables used to enable scrolling only on mouse hover.
    Keep the original table, semantics and keyboard owner, but allow touch and
@@ -1004,6 +1051,9 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
 /* Measure the space AFTER the native sidebar, including browser zoom. Do not
    squeeze a tiny manuscript beside a fixed minimum conversation column. */
 @container novel-desk (max-width: 1050px) {
+  .novel-assistant-splitter {
+    display: none;
+  }
   .novel-desk[data-assistant='open'] .novel-desk-writing {
     display: none;
   }

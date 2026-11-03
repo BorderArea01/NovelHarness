@@ -49,6 +49,10 @@ export async function verifySharedUi(browser) {
     // desktop entry instead of deciding that a not-yet-mounted sidebar is folded.
     await page.getByRole('link', { name: '数据与访问', exact: true }).click({ timeout: 45000 });
     await page.getByRole('heading', { name: '私人共享空间', exact: true }).waitFor();
+    await page.getByRole('heading', { name: '服务与存储', exact: true }).waitFor();
+    await expect(page.getByRole('region', { name: '服务与存储', exact: true })).toContainText('主机 SQLite');
+    await page.getByText('查看存储位置与连接', { exact: true }).click();
+    await expect(page.getByRole('region', { name: '服务与存储', exact: true })).toContainText(root);
     assert.equal(await page.locator('body').getAttribute('data-novel-mode'), 'shared');
     assert.equal(await page.getByLabel('当前 PIN', { exact: true }).isVisible(), false);
     for (const width of [1280, 768, 390, 320]) {
@@ -69,7 +73,13 @@ export async function verifySharedUi(browser) {
     await page.locator('#login-form button[type=submit]').click();
     await page.locator('.novel-native-frame').waitFor({ timeout: 45000 });
     assert.equal(modelRequests, 0);
-    return { pinLoginAndChange: true, commonAccountUi: true, modelRequests, layouts: [1280, 768, 390, 320] };
+    return {
+      pinLoginAndChange: true,
+      commonAccountUi: true,
+      deploymentDetails: true,
+      modelRequests,
+      layouts: [1280, 768, 390, 320],
+    };
   } catch (error) {
     if (page) await page.screenshot({ path: 'test-results/mode-shared-failure.png' }).catch(() => {});
     throw error;

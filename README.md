@@ -18,6 +18,10 @@
 
 侧栏统一提供「数据与访问」，显示当前空间和备份说明。私人模式可在这里修改 PIN，访客模式不会显示无效的 PIN 控件。
 
+**两种模式都需要服务器存储。** 访客隔离不等于无数据库：浏览器 Cookie 识别自己的服务器空间，每人独立的 SQLite、对话和模型配置仍需持久保存。私人模式共用一份 SQLite 与原生会话目录，不需要另外配置 MySQL、PostgreSQL 或 Cloudflare 数据库。
+
+私人部署的完整配置、磁盘 / 容器挂载、公网代理与穿透边界见 [部署指南](docs/DEPLOYMENT.md)。可直接参考 `novelharness.config.shared.example.json`（局域网）和 `novelharness.config.public.example.json`（私人公网）。
+
 ### 访客隔离模式
 
 默认启动匿名访客隔离版，无需 PIN 或恢复口令。首次访问自动生成高熵、带签名的 HttpOnly Cookie。每个访客使用独立的 SQLite 小说库、原生对话目录、模型凭据和设置；每套部署还使用独立的签名密钥。
@@ -62,16 +66,17 @@ npm start
 
 公网使用 HTTPS 反向代理，保留 WebSocket、SSE、Cookie 和原始 Host，不缓存用户请求。
 
-| 变量                  | 默认值                         | 含义                                                |
-| --------------------- | ------------------------------ | --------------------------------------------------- |
-| `HOST`                | `127.0.0.1`                    | 监听地址；容器内可设 `0.0.0.0`                      |
-| `PORT`                | `3210`                         | 服务端口                                            |
-| `PUBLIC_ORIGIN`       | 本机访问地址                   | 实际来源，如 `https://novels.example.com`，不带路径 |
-| `MAX_ACTIVE_VISITORS` | `2`                            | 驻留访客宿主数，1–8；按内存调整                     |
-| `NOVEL_MODE`          | `isolated`                     | `isolated` 或 `shared`，覆盖 JSON 中的模式          |
-| `NOVEL_DATA_DIR`      | 按模式选择安装目录内的空间目录 | 覆盖 `dataDirectory`，书稿、对话和配置所在目录      |
-| `NOVEL_CONFIG`        | `novelharness.config.json`     | 部署配置文件路径                                    |
-| `NOVEL_INITIAL_PIN`   | 无                             | 仅用于私人模式首次初始化，不重设已有 PIN            |
+| 变量                  | 默认值                         | 含义                                                                     |
+| --------------------- | ------------------------------ | ------------------------------------------------------------------------ |
+| `HOST`                | `127.0.0.1`                    | 监听地址；容器内可设 `0.0.0.0`                                           |
+| `PORT`                | `3210`                         | 服务端口                                                                 |
+| `PUBLIC_ORIGIN`       | 本机访问地址                   | 实际来源，如 `https://novels.example.com`，不带路径                      |
+| `NOVEL_INGRESS`       | 无公网地址时 `lan`             | `lan`、`reverse-proxy` 或 `cloudflare-vpc`；声明连接方式，不自动建立穿透 |
+| `MAX_ACTIVE_VISITORS` | `2`                            | 驻留访客宿主数，1–8；按内存调整                                          |
+| `NOVEL_MODE`          | `isolated`                     | `isolated` 或 `shared`，覆盖 JSON 中的模式                               |
+| `NOVEL_DATA_DIR`      | 按模式选择安装目录内的空间目录 | 覆盖 `dataDirectory`，书稿、对话和配置所在目录                           |
+| `NOVEL_CONFIG`        | `novelharness.config.json`     | 部署配置文件路径                                                         |
+| `NOVEL_INITIAL_PIN`   | 无                             | 仅用于私人模式首次初始化，不重设已有 PIN                                 |
 
 运行中的 AI 不因访客切换被强制停止；驻留空间都忙时，新空间提示稍后重试。访客宿主 V8 堆上限 384 MiB，私人宿主为 512 MiB，另有原生内存。本版适合小规模部署，尚未完成高并发和长期内存稳定性验证。
 
@@ -96,6 +101,10 @@ node cloud/selfhost/adopt-store.mjs --legacy-runtime=/path/to/old-runtime --runt
 核验和备份完成后加 `--apply` 执行登记。原 SQLite、对话、图片、PIN 和恢复口令留在原路径；该工具拒绝在旧进程仍运行时登记，也保留恢复托管依赖的记录。随后将配置中的 `mode` 设为 `shared`，`dataDirectory` 指向这个原目录。不要在两个进程之间手工复制正在使用的数据库。
 
 Windows 的 `npm run start:background` 和 `npm run autostart:install` 也读取同一份配置；首次 PIN 初始化先在交互式 `npm start` 完成。后台启动不会偷偷构建，也不会停止占用端口的其他服务。
+
+`npm run deployment:check` 只读检查实际数据路径、目录模式、数据库完整性、PIN 初始化和入口配置，不创建数据库或改网络。配置检查通过不代表公网已连通；详细输出会保留待验证项。私人页面「数据与访问 → 服务与存储」可查看正在运行的真实数据位置，未登录和访客模式不会取得主机路径。
+
+宽屏打开创作助手后，可拖动书稿与助手之间的分隔线；双击恢复默认宽度，方向键微调。宽度在当前浏览器记忆，窄屏继续使用单页切换，不压缩正文。
 
 ## 验证
 

@@ -1,17 +1,11 @@
 // Local launcher metadata only; never print PINs, recovery keys or credentials.
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { loadDeploymentConfig } from './config.mjs';
+import { loadDeploymentConfig, storageDirectory } from './config.mjs';
 import { pinIsConfigured } from './initial-pin.mjs';
 import { leaseFile } from './installation-lease.mjs';
 const config = await loadDeploymentConfig();
-const dataDirectory =
-  config.dataDirectory ??
-  join(
-    config.runtimeDirectory,
-    'data/official-validation/integration',
-    config.mode === 'shared' ? 'shared' : 'visitors',
-  );
+const dataDirectory = storageDirectory(config);
 let prepared = false;
 try {
   const marker = JSON.parse(await readFile(join(config.runtimeDirectory, '.anonymous-host.json'), 'utf8'));

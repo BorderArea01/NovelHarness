@@ -6,6 +6,7 @@ import { bindVisibleViewport } from './visual-viewport.mjs';
 import { resetBookConversation } from './conversation-reset.mjs';
 import { createTitleEditor, renameConversation, renameBook } from './title-editor.mjs';
 import { icon } from './ui-icons.mjs';
+import { createAssistantSplitter } from './assistant-splitter.mjs';
 import {
   bookActivities,
   subscribeBookActivities,
@@ -19,6 +20,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
   const h = React.createElement;
   const anonymous = globalThis.document?.body?.dataset.novelAuth === 'anonymous';
   const TitleEditor = createTitleEditor(React);
+  const AssistantSplitter = createAssistantSplitter(React);
   ctx.effect(() => bindVisibleViewport(), 'novel: original browser visual viewport');
   let modelLauncher;
   let Editor;
@@ -201,6 +203,8 @@ export function installApplication(ctx, React, { createPortal } = {}) {
   }
   function NovelDesk({ useSessions, conversation }) {
     const state = React.useSyncExternalStore(subscribe, snapshot);
+    const panes = React.useRef(null);
+    const assistantId = React.useId();
     const [actionHost, setActionHost] = React.useState(null);
     const [headingHost, setHeadingHost] = React.useState(null);
     const [resetting, setResetting] = React.useState(false);
@@ -306,7 +310,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       ),
       h(
         'div',
-        { className: 'novel-desk-panes' },
+        { className: 'novel-desk-panes', ref: panes },
         bookId && Editor
           ? h(
               'div',
@@ -329,12 +333,14 @@ export function installApplication(ctx, React, { createPortal } = {}) {
                 h('button', { onClick: navigation.library }, '前往书库'),
               )
             : null,
+        bookId && state.assistant ? h(AssistantSplitter, { panes, assistantId }) : null,
         // Exactly one original Conversation subtree, kept mounted while browsing
         // the manuscript so streaming, approvals and the unsent draft survive.
         h(
           'aside',
           {
             className: 'novel-desk-assistant',
+            id: assistantId,
             'aria-label': '创作助手对话',
             hidden: !state.assistant,
           },
@@ -792,6 +798,99 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       ),
     );
   }
+  function DeploymentStatus() {
+    const [info, setInfo] = React.useState(null);
+    const [error, setError] = React.useState('');
+    const [loading, setLoading] = React.useState(true);
+    const request = React.useRef(null);
+    async function reload() {
+      request.current?.abort();
+      const owner = new AbortController();
+      request.current = owner;
+      setLoading(true);
+      setError('');
+      try {
+        const response = await fetch('/api/deployment/details', {
+          credentials: 'same-origin',
+          signal: AbortSignal.any([owner.signal, AbortSignal.timeout(10000)]),
+        });
+        if (response.status === 401) throw new Error('请重新登录后查看部署信息。');
+        if (!response.ok) throw new Error('部署信息暂不可用，未更换数据源。');
+        const value = await response.json();
+        if (!owner.signal.aborted) setInfo(value);
+      } catch (err) {
+        if (!owner.signal.aborted) setError(err.message);
+      } finally {
+        if (!owner.signal.aborted) setLoading(false);
+      }
+    }
+    React.useEffect(() => {
+      reload();
+      return () => request.current?.abort();
+    }, []);
+    const fact = (name, text) => h('div', { key: name }, h('dt', null, name), h('dd', null, text));
+    return h(
+      'section',
+      { className: 'novel-account-note novel-deployment', 'aria-label': '服务与存储' },
+      h(
+        'div',
+        { className: 'novel-space-heading' },
+        h('h2', null, '服务与存储'),
+        h('button', { type: 'button', onClick: reload, disabled: loading }, loading ? '检查中…' : '刷新状态'),
+      ),
+      error ? h('p', { role: 'status' }, error) : null,
+      info
+        ? h(
+            React.Fragment,
+            null,
+            h(
+              'dl',
+              { className: 'novel-space-facts' },
+              fact('数据源', '主机 SQLite · 已登录设备共用'),
+              fact('公网入口', info.access.publicOrigin || '未配置，仅本机或局域网访问'),
+            ),
+            h(
+              'details',
+              null,
+              h('summary', null, '查看存储位置与连接'),
+              h(
+                'dl',
+                { className: 'novel-space-facts' },
+                fact('数据目录', h('code', null, info.storage.directory)),
+                fact('书稿库', h('code', null, info.storage.database)),
+                fact('对话目录', h('code', null, info.storage.conversations)),
+                fact('配置目录', h('code', null, info.storage.settings)),
+                fact('监听', `${info.access.listenHost}:${info.access.port}`),
+                fact(
+                  '局域网',
+                  info.access.lanOrigins.length ? info.access.lanOrigins.join(' · ') : '未开放局域网监听',
+                ),
+                fact(
+                  '连接方式',
+                  {
+                    lan: '本机 / 局域网直连',
+                    'reverse-proxy': '外部 HTTPS 反向代理',
+                    'cloudflare-vpc': 'Cloudflare VPC / Tunnel 认证转发',
+                  }[info.access.ingress],
+                ),
+              ),
+              info.access.publicOrigin
+                ? h(
+                    'p',
+                    { className: 'novel-app-hint' },
+                    '这里只显示入口配置，未声称隧道已连通。公网代理或隧道由部署主机管理，不能仅靠填写网址建立。',
+                  )
+                : null,
+              h(
+                'p',
+                { className: 'novel-app-hint' },
+                '修改部署主机的 novelharness.config.json 后重启生效。更换数据目录不会搬迁旧数据；完整备份需保留整个数据目录。',
+              ),
+            ),
+          )
+        : null,
+    );
+  }
   function Account() {
     if (anonymous)
       return h(
@@ -809,6 +908,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
           'section',
           { className: 'novel-account-note' },
           h('h2', null, '作品备份'),
+          h('p', null, '各访客仍使用服务器上的独立 SQLite、对话和配置；不是只保存在浏览器里。'),
           h('p', null, '在书库的「管理作品」中导出备份。单本备份不含原生对话和全局模型配置。'),
           h('p', { className: 'novel-app-hint' }, '部署者仍可管理服务器数据，此空间不提供端到端加密。'),
         ),
@@ -891,6 +991,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       { className: 'novel-application novel-account', 'aria-label': '数据与访问' },
       h(AccountHeading),
       h(SpaceSummary),
+      h(DeploymentStatus),
       configured === null
         ? null
         : h(

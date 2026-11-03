@@ -205,10 +205,17 @@ try {
   if (!report.cleanupPending)
     for (const id of identities) {
       assert(/^[a-f0-9]{64}$/.test(id));
-      await rm(resolve('data/anonymous-runtime/data/official-validation/integration/visitors', id), {
-        recursive: true,
-        force: true,
-      });
+      await rm(
+        resolve(
+          process.env.NOVEL_RUNTIME_DIR ?? 'data/anonymous-runtime',
+          'data/official-validation/integration/visitors',
+          id,
+        ),
+        {
+          recursive: true,
+          force: true,
+        },
+      );
     }
   if (failure) report.passed = false;
   await writeFile('test-results/public-browser.json', JSON.stringify(report));

@@ -6,6 +6,55 @@ import { join } from 'node:path';
 import { deploymentConfig, loadDeploymentConfig } from './config.mjs';
 import { claimDataDirectory, visitorSigningKeys } from './data-directory.mjs';
 import { claimInstallationLease, ensureInstallationIdle } from './installation-lease.mjs';
+import { checkDeployment } from './check-deployment.mjs';
+import { existsSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
+
+test('public access configuration is explicit and never pretends to create a tunnel', async () => {
+  assert.equal(deploymentConfig().ingress, 'lan');
+  assert.equal(deploymentConfig({ publicOrigin: 'https://novels.example.test' }).ingress, 'reverse-proxy');
+  const privatePublic = deploymentConfig({
+    mode: 'shared',
+    ingress: 'cloudflare-vpc',
+    publicOrigin: 'https://novels.example.test',
+  });
+  assert.equal(privatePublic.ingress, 'cloudflare-vpc');
+  for (const config of [
+    { ingress: 'unknown' },
+    { ingress: 'lan', publicOrigin: 'https://novels.example.test' },
+    { ingress: 'reverse-proxy' },
+    { mode: 'isolated', ingress: 'cloudflare-vpc', publicOrigin: 'https://novels.example.test' },
+    { mode: 'shared', ingress: 'cloudflare-vpc', publicOrigin: 'http://novels.example.test' },
+  ])
+    assert.throws(() => deploymentConfig(config));
+  const root = await mkdtemp(join(tmpdir(), 'novel-deploy-check-'));
+  try {
+    const artifact = join(root, 'program'),
+      store = join(root, 'persistent');
+    await mkdir(artifact);
+    await writeFile(
+      join(artifact, '.anonymous-host.json'),
+      JSON.stringify({ format: 'novelharness-anonymous-v1', prepared: true }),
+    );
+    const config = { ...privatePublic, runtimeDirectory: artifact, dataDirectory: store };
+    const first = await checkDeployment(config);
+    assert.equal(first.configurationValid, true);
+    assert.equal(first.publicConnectionVerified, false);
+    assert.equal(first.networkChanged, false);
+    assert(first.checks.some((c) => c.name === 'access' && c.status === 'warning'));
+    assert.equal(existsSync(store), false, 'Read-only checks must not initialize a new store.');
+    await mkdir(store);
+    await writeFile(
+      join(store, '.novelharness-store.json'),
+      JSON.stringify({ format: 'novelharness-store-v1', mode: 'isolated' }),
+    );
+    assert.equal((await checkDeployment(config)).configurationValid, false);
+    assert.equal(existsSync(join(store, 'main.sqlite')), false);
+  } finally {
+    assert(root.startsWith(join(tmpdir(), 'novel-deploy-check-')));
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test('one configuration selects mode; explicit environment overrides JSON without accepting secrets in JSON', async () => {
   assert.equal(deploymentConfig().mode, 'isolated');

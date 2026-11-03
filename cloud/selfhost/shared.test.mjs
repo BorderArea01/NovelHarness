@@ -54,9 +54,20 @@ try {
   const unauthorized = await response(0, '/api/novels');
   assert.equal(unauthorized.status, 401);
   await unauthorized.arrayBuffer();
+  const hiddenDeployment = await response(0, '/api/deployment/details');
+  assert.equal(hiddenDeployment.status, 401);
+  assert(!(await hiddenDeployment.text()).includes(root));
   assert.equal((await call(0, '/api/deployment')).mode, 'shared');
   for (const who of [0, 1])
     assert.equal((await call(who, '/api/auth/login', { pin: '753951' })).authenticated, true);
+  const deployment = await call(0, '/api/deployment/details');
+  assert.equal(deployment.storage.directory, root);
+  assert.equal(deployment.storage.database, join(root, 'main.sqlite'));
+  assert.equal(deployment.access.ingress, 'lan');
+  assert.equal(deployment.access.connectionVerified, false);
+  const readOnlyConfig = await response(0, '/api/deployment/details', { dataDirectory: 'some-other-store' });
+  assert.equal(readOnlyConfig.status, 405);
+  await readOnlyConfig.arrayBuffer();
   const bundle = await makeBookBundle(null, { title: '共享空间验收', seed: '合成测试，不调用模型。' });
   const api = '/api/novels/' + bundle.manifest.id;
   await call(0, api + '/bootstrap', bundle);
@@ -99,6 +110,9 @@ try {
   const expired = await response(0, '/api/novels');
   assert.equal(expired.status, 401);
   await expired.arrayBuffer();
+  const expiredDeployment = await response(0, '/api/deployment/details');
+  assert.equal(expiredDeployment.status, 401);
+  await expiredDeployment.arrayBuffer();
   await call(0, '/api/auth/login', { pin: '975319' });
   const cross = await fetch(app.origin + '/api/novels', { headers: { origin: 'https://wrong.example' } });
   assert.equal(cross.status, 403);
@@ -143,6 +157,7 @@ try {
   report.sharedBooksChatAndCredentials = true;
   report.restartAndPinChange = true;
   report.optimisticConflict = true;
+  report.authenticatedDeploymentDetails = true;
   report.passed = true;
 } finally {
   await app?.close();

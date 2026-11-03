@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { emitKeypressEvents } from 'node:readline';
 import Database from 'better-sqlite3';
+import { storageDirectory } from './config.mjs';
 
 export function pinIsConfigured(dataRoot) {
   const path = join(dataRoot, 'home/web-pin.sqlite');
@@ -54,8 +55,7 @@ function hiddenPin(label) {
 export async function initialPinForCli(config) {
   if (config.mode !== 'shared' || config.initialPin !== undefined || !process.stdin.isTTY)
     return config.initialPin;
-  const root =
-    config.dataDirectory ?? join(config.runtimeDirectory, 'data/official-validation/integration/shared');
+  const root = storageDirectory(config);
   if (pinIsConfigured(root)) return undefined;
   console.log('首次启动私人共享空间。PIN 用于电脑和手机登录，以后可在「数据与访问」修改。');
   while (true) {

@@ -19,8 +19,8 @@ try {
       : {}),
     args: ['--disable-background-networking', '--disable-extensions', '--js-flags=--max-old-space-size=192'],
   });
-  const a = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-  const b = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const a = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: 'zh-CN' });
+  const b = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'zh-CN' });
   for (const context of [a, b]) {
     await context.route('**/*', (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -109,7 +109,7 @@ try {
   for (const [i, context] of [a, b].entries()) {
     const page = await context.newPage();
     page.setDefaultTimeout(30000);
-    for (const name of ['继续', '稍后配置'])
+    for (const name of ['继续', 'Continue', '稍后配置', 'Configure later'])
       await page.addLocatorHandler(
         page.getByRole('button', { name, exact: true }),
         async () => page.getByRole('button', { name, exact: true }).click(),

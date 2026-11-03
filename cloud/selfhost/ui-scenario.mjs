@@ -14,6 +14,7 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false);
   const search = page.getByRole('searchbox', { name: '搜索小说', exact: true });
   await search.fill('雨港');
+  await expect(search).toHaveValue('雨港');
   await expect(page.locator('.book:visible')).toHaveCount(1);
   await search.fill('没有这个书名');
   await page.getByRole('heading', { name: '没有匹配的小说', exact: true }).waitFor();

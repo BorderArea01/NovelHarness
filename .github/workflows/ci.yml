@@ -1,0 +1,20 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  anonymous-edition:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: npm --prefix cloud/tools ci --ignore-scripts --no-audit --no-fund
+      - run: node cloud/selfhost/audit-source.mjs
+      - run: npm run test:public
+      - run: node --max-old-space-size=128 cloud/tests/run.mjs
+      - run: npm run build
+      - run: npm run test:public:integration
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:public:browser

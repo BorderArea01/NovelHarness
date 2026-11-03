@@ -1,0 +1,12 @@
+**/dist/**
+**/node_modules/**
+legacy/**
+index.html
+novel-writer-*.html
+LICENSE
+package-lock.json
+test-results/**
+cloud/pages/public/novel-assets/diff3-vendor.mjs
+cloud/pages/public/novel-assets/editor-vendor.mjs
+cloud/pages/public/native-shell/**
+cloud/pages/public/worker/shared/**

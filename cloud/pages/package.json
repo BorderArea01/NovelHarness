@@ -1,0 +1,9 @@
+{
+  "name": "novel-harness-pages",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../tools/node_modules/wrangler/bin/wrangler.js pages dev public",
+    "deploy": "node ../tools/node_modules/wrangler/bin/wrangler.js pages deploy public"
+  }
+}

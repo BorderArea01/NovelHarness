@@ -1,0 +1,11 @@
+{
+  "name": "novel-official-host-validation",
+  "private": true,
+  "type": "module",
+  "description": "Isolated compatibility lab only; never the production novel host.",
+  "dependencies": {
+    "@cloudflare/computer": "0.3.1",
+    "@deepseek-ai/dsh": "0.2.1-rc.2",
+    "dsh-purge": "https://codeload.github.com/YuJunZhiXue/dsh-purge/tar.gz/0c933dc7d3252698f3f0f9756932dcc88355f532"
+  }
+}

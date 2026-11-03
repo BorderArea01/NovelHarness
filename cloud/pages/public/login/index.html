@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>登录 · 小说工作台</title>
+  <link rel="stylesheet" href="/auth-assets/auth.css">
+  <script type="module" src="/auth-assets/auth.mjs"></script>
+</head>
+<body data-page="login">
+<main class="auth-card">
+  <p class="eyebrow">小说工作台</p>
+  <h1 id="auth-heading">进入创作</h1>
+  <p id="loading" role="status">正在检查登录状态…</p>
+  <ol id="setup-steps" class="setup-steps" aria-label="首次设置进度" hidden>
+    <li data-step="verify">1 · 验证身份</li>
+    <li data-step="pin">2 · 设置 PIN</li>
+  </ol>
+  <form id="login-form" hidden>
+    <label for="pin">登录 PIN</label>
+    <div class="password-field">
+      <input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" minlength="4" maxlength="12" autocomplete="current-password" required>
+      <button class="quiet reveal" type="button" data-reveal="pin" data-label="登录 PIN" aria-label="显示登录 PIN" aria-controls="pin" aria-pressed="false">显示</button>
+    </div>
+    <button type="submit">进入书库</button>
+    <p class="hint">使用你设置的 PIN · 此设备保持登录 30 天</p>
+  </form>
+  <section id="bootstrap" hidden>
+    <p>先验证部署口令，再设置你自己的 PIN。以后登录只需 PIN。</p>
+    <form id="bootstrap-form">
+      <label for="bootstrap-key">部署恢复口令</label>
+      <div class="password-field">
+        <input id="bootstrap-key" name="accessKey" type="password" maxlength="512" autocomplete="off" spellcheck="false" autocapitalize="none" aria-describedby="bootstrap-hint credential-hint" required>
+        <button class="quiet reveal" type="button" data-reveal="bootstrap-key" data-label="部署恢复口令" aria-label="显示部署恢复口令" aria-controls="bootstrap-key" aria-pressed="false">显示</button>
+      </div>
+      <p id="bootstrap-hint" class="hint">粘贴 owner-key.txt 中的整行口令。不是 PIN，也不是 DeepSeek Key。</p>
+      <p id="credential-hint" class="hint" aria-live="polite"></p>
+      <button type="submit">验证恢复口令</button>
+    </form>
+    <details>
+      <summary>口令在哪？</summary>
+      <p class="hint">在部署主机的 <code>data/cloud-platform/owner-key.txt</code> 中。本服务生成的是 64 位口令，请复制完整内容；没有默认 PIN。</p>
+      <p class="hint">暂时找不到时，先回到部署主机获取；不要填写模型 API Key。</p>
+    </details>
+  </section>
+  <section id="setup" hidden>
+    <p>身份已验证。设置一个以后登录用的 PIN。</p>
+    <form id="setup-form">
+      <label for="setup-pin">设置登录 PIN</label>
+      <div class="password-field">
+        <input id="setup-pin" name="newPin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" minlength="4" maxlength="12" autocomplete="new-password" aria-describedby="setup-hint" required>
+        <button class="quiet reveal" type="button" data-reveal="setup-pin" data-label="新 PIN" aria-label="显示新 PIN" aria-controls="setup-pin" aria-pressed="false">显示</button>
+      </div>
+      <label for="setup-confirm">再次输入 PIN</label>
+      <div class="password-field">
+        <input id="setup-confirm" name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" minlength="4" maxlength="12" autocomplete="new-password" required>
+        <button class="quiet reveal" type="button" data-reveal="setup-confirm" data-label="确认 PIN" aria-label="显示确认 PIN" aria-controls="setup-confirm" aria-pressed="false">显示</button>
+      </div>
+      <p id="setup-hint" class="hint">4–12 位数字，公网建议至少 6 位。不要用生日或连续数字。</p>
+      <button type="submit">设置 PIN 并进入书库</button>
+    </form>
+  </section>
+  <details id="recovery" hidden>
+    <summary>忘记 PIN？</summary>
+    <form id="recovery-form">
+      <label for="recovery-key">部署恢复口令</label>
+      <div class="password-field">
+        <input id="recovery-key" name="accessKey" type="password" maxlength="512" autocomplete="off" spellcheck="false" autocapitalize="none" required>
+        <button class="quiet reveal" type="button" data-reveal="recovery-key" data-label="部署恢复口令" aria-label="显示部署恢复口令" aria-controls="recovery-key" aria-pressed="false">显示</button>
+      </div>
+      <p class="hint">使用部署主机 owner-key.txt 的完整口令，不是 DeepSeek Key。</p>
+      <label for="reset-pin">新 PIN</label>
+      <input id="reset-pin" name="newPin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" minlength="4" maxlength="12" autocomplete="new-password" required>
+      <label for="reset-confirm">再次输入新 PIN</label>
+      <input id="reset-confirm" name="confirmPin" type="password" inputmode="numeric" pattern="[0-9]{4,12}" minlength="4" maxlength="12" autocomplete="new-password" required>
+      <button type="submit">重设 PIN 并登录</button>
+    </form>
+  </details>
+  <p id="message" role="status" aria-live="polite"></p>
+  <p class="hint footer-hint">PIN 保护你的书稿与模型额度。设置登录不需要重新配置 DeepSeek。</p>
+  <noscript>请启用 JavaScript 完成安全登录。</noscript>
+</main>
+</body>
+</html>

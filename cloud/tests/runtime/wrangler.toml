@@ -1,0 +1,45 @@
+# LOCAL VERIFICATION ONLY. Never use this fixture as a deployment configuration.
+name = "novel-harness-local-verification"
+# native-runtime.mjs replaces this with its staged wrapper/native entry.
+main = "../../worker/entry.mjs"
+compatibility_date = "2026-08-14"
+compatibility_flags = ["nodejs_compat", "global_fetch_strictly_public"]
+no_bundle = true
+find_additional_modules = true
+
+[[rules]]
+type = "ESModule"
+globs = ["**/*.mjs", "**/*.js"]
+fallthrough = true
+
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
+[assets]
+directory = "../../tools/node_modules/dsh-edge/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/", "/login"]
+
+[[durable_objects.bindings]]
+name = "DSH_EDGE_INSTANCE"
+class_name = "DshEdgeInstance"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["DshEdgeInstance"]
+
+[[durable_objects.bindings]]
+name = "PIN_AUTH"
+class_name = "PinAuth"
+
+[[migrations]]
+tag = "pin-v1"
+new_sqlite_classes = ["PinAuth"]
+
+[vars]
+NOVEL_EDITOR_DIAGNOSTICS = "local-fixture"
+# These are deliberately public synthetic fixture values, NOT user credentials.
+DSH_EDGE_ACCESS_KEY = "fixture-only-owner-key-not-for-production-0123456789abcdef"
+DEEPSEEK_API_KEY = "fixture-only-no-real-provider-key"
+DSH_EDGE_ATTACHMENT_STORAGE = "temporary-do"

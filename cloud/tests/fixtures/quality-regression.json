@@ -1,0 +1,124 @@
+{
+  "origin": "saved-2026-10-24-real-DeepSeek-synthetic-output-no-regeneration",
+  "source": {
+    "seed": "修表匠沈澄在渡口遇到收费员杜衡。姐姐沈遥失踪三天，只留下一枚铜钥匙和一张蓝色船票。",
+    "setting": "地点是靠摆渡船通行的雾港，傍晚钟声后最后一班渡船离岸。沈澄左手受伤，只能用右手拿钥匙。杜衡只是渡口收费员，没有已知的组织身份。",
+    "prose": "# 退票窗口\n\n沈澄用右手把铜钥匙压在票上，左手的绷带擦过柜台。杜衡先抽走钥匙，露出蓝纸下角被水泡开的票号。\n“票留下。”他说。\n“我只问这班船去了哪儿。”\n他把账簿推回抽屉，手仍压在封皮上。窗外的渡船开始收跳板。\n“你姐姐没交回那张票。”",
+    "instruction": "续写一个约500—650字的连续场景，仅写新增正文。第三人称限知沈澄，不进入杜衡内心；让杜衡的职业性回避通过动作和对话显现。沈澄为了追查姐姐必须做一个有代价的具体选择。不要揭晓姐姐生死、组织或钥匙的超自然能力，不重写已有段落，不加剧情标记。",
+    "currentChapter": {
+      "chapter": 2,
+      "title": "退票窗口",
+      "summary": "沈澄借查票争取翻看账簿，发现两张相同票号；需要在留下船票或赶上末班船之间选择。"
+    }
+  },
+  "before": {
+    "characters": [
+      {
+        "id": "du",
+        "name": "杜衡",
+        "trust": "manual",
+        "notes": "只是渡口收费员；组织身份未知。"
+      }
+    ],
+    "locations": [],
+    "items": [],
+    "organizations": [],
+    "relations": []
+  },
+  "canon": {
+    "characters": [
+      {
+        "id": "du",
+        "name": "杜衡",
+        "trust": "manual",
+        "notes": "只是渡口收费员；组织身份未知。"
+      },
+      {
+        "id": "shen-cheng",
+        "name": "沈澄",
+        "trust": "auto",
+        "notes": "左手受伤，缠有绷带；用右手把铜钥匙压在票上。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "沈澄用右手把铜钥匙压在票上，左手的绷带擦过柜台。"
+          }
+        ]
+      },
+      {
+        "id": "shen-yao",
+        "name": "沈遥",
+        "trust": "auto",
+        "notes": "沈澄的姐姐；杜衡称她没交回那张票。失踪与生死状态在本次原文中未证实。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "“你姐姐没交回那张票。”"
+          }
+        ]
+      }
+    ],
+    "locations": [
+      {
+        "id": "ferry-counter",
+        "name": "渡口收费柜台",
+        "trust": "auto",
+        "notes": "杜衡所在柜台；窗外可见渡船收跳板。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "窗外的渡船开始收跳板。"
+          }
+        ]
+      }
+    ],
+    "items": [
+      {
+        "id": "copper-key",
+        "name": "铜钥匙",
+        "trust": "auto",
+        "notes": "沈澄带到收费柜台，被杜衡先抽走。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "杜衡先抽走钥匙，露出蓝纸下角被水泡开的票号。"
+          }
+        ]
+      },
+      {
+        "id": "blue-ticket",
+        "name": "蓝色船票",
+        "trust": "auto",
+        "notes": "票下角票号被水泡开；沈澄将其压在柜台，杜衡要求把票留下。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "露出蓝纸下角被水泡开的票号。"
+          },
+          {
+            "path": "chapters/2.md",
+            "quote": "“票留下。”他说。"
+          }
+        ]
+      }
+    ],
+    "organizations": [],
+    "relations": [
+      {
+        "label": "姐弟",
+        "sourceType": "character",
+        "sourceId": "shen-cheng",
+        "targetType": "character",
+        "targetId": "shen-yao",
+        "trust": "auto",
+        "notes": "杜衡以“你姐姐”指称沈遥与沈澄的关系。",
+        "evidenceSources": [
+          {
+            "path": "chapters/2.md",
+            "quote": "“你姐姐没交回那张票。”"
+          }
+        ]
+      }
+    ]
+  }
+}

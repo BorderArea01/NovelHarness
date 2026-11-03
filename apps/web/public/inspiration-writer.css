@@ -1,0 +1,612 @@
+/* Isolated, outline-first studio; legacy editor and canvas remain available. */
+html:has(body.inspiration-mode) {
+  scroll-padding-top: var(--inspiration-toolbar-height, 180px);
+}
+body.inspiration-mode:has(#tabBar) #app > header,
+body.inspiration-mode:has(#tabBar) #app #tabBar,
+body.inspiration-mode #generationStreamDock,
+body.inspiration-mode #onboardingModal {
+  display: none !important;
+}
+body.inspiration-mode:has(#tabBar) #app {
+  display: block !important;
+  max-width: 1440px !important;
+  width: 100%;
+  margin: auto;
+  padding: 0 !important;
+}
+body.inspiration-mode:has(#tabBar) #app > #tab-inspiration {
+  padding: 24px 32px 48px !important;
+}
+#tab-inspiration [hidden] {
+  display: none !important;
+}
+#tab-inspiration .inspiration-header {
+  display: flex;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 18px;
+  padding: 0 0 20px;
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+#tab-inspiration .inspiration-header h1 {
+  flex: 1;
+  min-width: 0;
+  font-size: 1.05rem !important;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#tab-inspiration .inspiration-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 20px 0 12px;
+}
+#tab-inspiration .inspiration-steps button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 10px 16px;
+  box-shadow: none;
+  color: var(--text2);
+  border-radius: 3px;
+}
+#tab-inspiration .inspiration-steps button > span {
+  color: var(--accent2);
+  font-size: 0.78rem;
+}
+#tab-inspiration .inspiration-steps button.active {
+  background: var(--surface-soft) !important;
+  color: var(--text) !important;
+  border-color: var(--accent2) !important;
+}
+#tab-inspiration .inspiration-steps .inspiration-save-state {
+  margin-left: auto;
+  padding: 8px;
+  font-size: 0.75rem;
+}
+#tab-inspiration .inspiration-status-bar {
+  display: flex;
+  align-items: center;
+  min-height: 38px;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+#inspirationStatus {
+  color: var(--text2);
+  font-size: 0.83rem;
+  overflow-wrap: anywhere;
+  flex: 1;
+}
+#inspirationStatus.error {
+  color: #ef9696;
+}
+#tab-inspiration .inspiration-studio {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  align-items: start;
+  gap: 26px;
+}
+#tab-inspiration .inspiration-studio.is-ideas {
+  display: block;
+  max-width: 850px;
+  margin: 0 auto;
+}
+#tab-inspiration .inspiration-sidebar {
+  position: sticky;
+  top: 20px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  padding: 12px;
+  background: var(--surface);
+}
+#tab-inspiration .inspiration-rail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+#inspirationOutlineCount {
+  font-size: 0.75rem;
+  color: var(--text2);
+}
+#inspirationChapterList {
+  max-height: 58vh;
+  overflow-y: auto;
+  margin: 0 -4px 12px;
+}
+#tab-inspiration .inspiration-chapter-link {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 9px;
+  padding: 11px 8px;
+  margin: 3px 0;
+  text-align: left;
+  background: transparent;
+  box-shadow: none;
+  border-color: transparent;
+  color: var(--text2);
+  border-radius: 2px;
+}
+#tab-inspiration .inspiration-chapter-link > span:nth-child(2) {
+  overflow-wrap: anywhere;
+  font-size: 0.83rem;
+  line-height: 1.6;
+}
+#tab-inspiration .inspiration-chapter-link > span:first-child {
+  font-size: 0.75rem;
+  color: var(--accent2);
+  padding-top: 2px;
+}
+#tab-inspiration .inspiration-chapter-link small {
+  font-size: 0.64rem;
+  line-height: 2;
+  white-space: nowrap;
+}
+#tab-inspiration .inspiration-chapter-link.selected {
+  color: var(--text);
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+#tab-inspiration .inspiration-main {
+  min-width: 0;
+}
+#tab-inspiration .inspiration-main > section {
+  padding: 24px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+#tab-inspiration .inspiration-ideas {
+  padding: 32px !important;
+}
+#tab-inspiration .inspiration-kicker {
+  color: var(--accent2);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  margin-bottom: 12px;
+}
+#tab-inspiration h2 {
+  color: var(--text);
+  font-size: 1.3rem;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: 0 0 12px;
+}
+#tab-inspiration .inspiration-muted {
+  color: var(--text2);
+  font-size: 0.85rem;
+}
+#tab-inspiration label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin: 20px 0 8px;
+}
+#tab-inspiration input,
+#tab-inspiration select,
+#tab-inspiration textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  background: var(--surface-soft) !important;
+  color: var(--text);
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px;
+}
+#tab-inspiration textarea {
+  resize: vertical;
+  line-height: 1.9 !important;
+  font-size: 15px !important;
+}
+#inspirationSeedInput {
+  min-height: 220px;
+}
+#inspirationOutlineSummary {
+  min-height: 270px;
+}
+#tab-inspiration summary {
+  cursor: pointer;
+  color: var(--text2);
+  line-height: 1.6;
+  padding: 4px 0;
+}
+#tab-inspiration .inspiration-options {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+#tab-inspiration .inspiration-options > div:first-of-type {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+#tab-inspiration .inspiration-options label {
+  margin-top: 12px;
+}
+#tab-inspiration .inspiration-sidebar details {
+  padding-top: 12px;
+}
+#tab-inspiration .inspiration-sidebar details .btn {
+  margin: 10px 0;
+  width: 100%;
+}
+#tab-inspiration .inspiration-direction {
+  white-space: pre-wrap;
+  color: var(--text2);
+  line-height: 1.9;
+  font-size: 0.87rem;
+  padding: 16px;
+  border-left: 2px solid var(--accent2);
+}
+#tab-inspiration .inspiration-content-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+#tab-inspiration .inspiration-content-head h2 {
+  flex: 1;
+  min-width: 180px;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 1.15rem;
+}
+#tab-inspiration .inspiration-content-head select {
+  width: auto;
+  max-width: 160px;
+  padding: 8px;
+}
+#inspirationWords {
+  font-size: 0.78rem;
+  color: var(--text2);
+}
+#tab-inspiration .inspiration-quality {
+  color: var(--text2);
+  font-size: 0.8rem;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 12px;
+  background: var(--surface-soft);
+  border-left: 2px solid var(--accent2);
+}
+#tab-inspiration .inspiration-quality summary {
+  padding: 0;
+  font-size: 0.8rem;
+}
+#tab-inspiration .inspiration-quality p {
+  margin: 12px 0 0;
+}
+#tab-inspiration .inspiration-quality[data-freshness='stale'],
+#inspirationHistorySource {
+  border-left: 2px solid var(--accent);
+  color: var(--text2);
+}
+#tab-inspiration .inspiration-history-review {
+  margin-bottom: 16px;
+  scroll-margin-top: 16px;
+}
+#inspirationHistorySummary,
+#inspirationHistorySource {
+  font-size: 0.83rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+#inspirationHistorySource {
+  padding: 8px 12px;
+}
+#tab-inspiration .inspiration-history-change {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+#tab-inspiration .inspiration-history-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 10px;
+}
+#tab-inspiration .inspiration-history-versions section {
+  padding: 14px;
+  background: var(--surface-soft);
+  min-width: 0;
+}
+#tab-inspiration .inspiration-history-versions h3 {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  color: var(--text2);
+}
+#tab-inspiration .inspiration-history-versions h4 {
+  font-size: 0.76rem;
+  font-weight: normal;
+  color: var(--text2);
+  margin: 12px 0 6px;
+}
+#tab-inspiration .inspiration-history-versions summary {
+  font-size: 0.78rem;
+}
+#tab-inspiration .inspiration-history-versions p {
+  font-size: 0.88rem;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+#inspirationHistoryConfirm {
+  margin-top: 16px;
+  min-height: 44px;
+}
+#tab-inspiration .inspiration-outline-card {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+#tab-inspiration .inspiration-outline-card:first-child {
+  padding-top: 0;
+}
+#tab-inspiration .inspiration-outline-card > summary {
+  font-size: 1rem;
+  color: var(--text);
+}
+#tab-inspiration .inspiration-outline-card p,
+#tab-inspiration .inspiration-outline-card li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.95;
+  font-size: 0.9rem;
+}
+#tab-inspiration .inspiration-outline-card ol {
+  padding-left: 24px;
+  color: var(--text2);
+}
+#tab-inspiration .inspiration-outline-card .btn {
+  font-size: 0.75rem;
+  padding: 6px 10px;
+}
+#tab-inspiration .inspiration-beat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-bottom: 10px;
+  align-items: stretch;
+}
+#tab-inspiration .inspiration-beat > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#tab-inspiration .inspiration-beat .btn {
+  min-width: 36px;
+  min-height: 30px;
+  padding: 2px 8px;
+  font-size: 1rem;
+}
+#tab-inspiration #inspirationEditor {
+  min-height: 62vh;
+  line-height: 2.1 !important;
+  font-size: 16px !important;
+  padding: 24px !important;
+  font-family: 'Microsoft YaHei', sans-serif;
+}
+#tab-inspiration .inspiration-process {
+  padding: 12px 16px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+#inspirationProcessText {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+  font-size: 0.83rem;
+  line-height: 1.9;
+  max-height: 340px;
+  overflow-y: auto;
+  margin: 12px 0 0;
+}
+#tab-inspiration .inspiration-recovery {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+#tab-inspiration .inspiration-recovery p {
+  font-size: 0.82rem;
+  line-height: 1.8;
+  color: var(--text2);
+}
+#tab-inspiration .inspiration-recovery .btn {
+  min-height: 44px;
+  white-space: normal;
+}
+#tab-inspiration .inspiration-footer {
+  position: sticky;
+  top: 8px;
+  z-index: 5;
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+}
+#tab-inspiration .inspiration-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#tab-inspiration .inspiration-footer.is-running {
+  flex-wrap: nowrap;
+}
+#inspirationTaskLabel {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#inspirationPlanGate {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text2);
+  min-width: 150px;
+  margin: 0;
+  line-height: 1.8;
+}
+#inspirationAdditionForm .btn {
+  margin-top: 10px;
+}
+#inspirationAdditions li {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text2);
+  line-height: 1.8;
+  padding: 8px 0;
+}
+#inspirationAdditions .btn {
+  margin-left: 10px;
+  font-size: 0.75rem;
+}
+@media (max-width: 900px) {
+  body.inspiration-mode:has(#tabBar) #app > #tab-inspiration {
+    padding: 18px !important;
+  }
+  #tab-inspiration .inspiration-studio {
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: 16px;
+  }
+  #tab-inspiration .inspiration-main > section {
+    padding: 18px;
+  }
+}
+@media (max-width: 640px) {
+  #tab-inspiration .inspiration-history-versions {
+    grid-template-columns: 1fr;
+  }
+  body.inspiration-mode:has(#tabBar) #app > #tab-inspiration {
+    padding: 12px 10px 32px !important;
+  }
+  #tab-inspiration .inspiration-header {
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+  #tab-inspiration .inspiration-header .btn {
+    font-size: 0.75rem;
+    padding: 8px;
+  }
+  #tab-inspiration .inspiration-header h1 {
+    font-size: 0.87rem !important;
+  }
+  #tab-inspiration .inspiration-steps {
+    gap: 2px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  #tab-inspiration .inspiration-steps button {
+    padding: 8px 10px;
+    gap: 6px;
+    font-size: 0.8rem;
+    min-height: 42px;
+  }
+  #tab-inspiration .inspiration-steps .inspiration-save-state {
+    font-size: 0.7rem;
+    padding: 4px;
+  }
+  #tab-inspiration .inspiration-studio {
+    display: block;
+  }
+  #tab-inspiration .inspiration-sidebar {
+    position: static;
+    margin-bottom: 16px;
+  }
+  #tab-inspiration .inspiration-studio.is-write .inspiration-sidebar {
+    display: none;
+  }
+  #inspirationChapterList {
+    display: flex;
+    max-height: none;
+    overflow-x: auto;
+    margin-bottom: 10px;
+    padding: 4px;
+    gap: 6px;
+  }
+  #tab-inspiration .inspiration-chapter-link {
+    width: 158px;
+    flex: 0 0 158px;
+    grid-template-columns: 22px 1fr;
+  }
+  #tab-inspiration .inspiration-chapter-link small {
+    display: none;
+  }
+  #tab-inspiration .inspiration-chapter-link > span:nth-child(2) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #tab-inspiration .inspiration-sidebar > details,
+  #inspirationAddChapter {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 10px;
+  }
+  #tab-inspiration .inspiration-main > section,
+  #tab-inspiration .inspiration-ideas {
+    padding: 18px 14px !important;
+  }
+  #tab-inspiration h2 {
+    font-size: 1.15rem;
+  }
+  #tab-inspiration input,
+  #tab-inspiration textarea {
+    font-size: 16px !important;
+  }
+  #tab-inspiration .inspiration-content-head {
+    gap: 10px;
+  }
+  #tab-inspiration .inspiration-content-head h2 {
+    flex-basis: 100%;
+  }
+  #tab-inspiration #inspirationEditor {
+    padding: 16px !important;
+    min-height: 60vh;
+  }
+  #tab-inspiration .inspiration-beat .btn {
+    min-height: 40px;
+    min-width: 42px;
+  }
+  #tab-inspiration .inspiration-footer > div {
+    width: 100%;
+    flex-direction: column;
+  }
+  #tab-inspiration .inspiration-footer .btn {
+    min-height: 44px;
+    width: 100%;
+  }
+  #tab-inspiration .inspiration-footer {
+    top: 0;
+    gap: 8px;
+    padding: 10px;
+  }
+  #tab-inspiration .inspiration-footer.is-running > div {
+    width: auto;
+    flex-direction: row;
+  }
+  #tab-inspiration .inspiration-footer.is-running .btn {
+    width: auto;
+    min-width: 64px;
+  }
+}

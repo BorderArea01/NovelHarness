@@ -1,0 +1,15 @@
+name: Source Release
+on:
+  push:
+    tags: ['v*']
+jobs:
+  source-release:
+    permissions: { contents: write }
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: git archive --format=tar.gz --prefix=NovelHarness/ -o "NovelHarness-${GITHUB_REF_NAME}.tar.gz" HEAD
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: 'NovelHarness-*.tar.gz'
+          generate_release_notes: true

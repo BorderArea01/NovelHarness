@@ -1,0 +1,16 @@
+{
+  "name": "novel-harness-cloud",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "scripts": {
+    "test": "node --max-old-space-size=128 tests/run.mjs",
+    "tools:ci": "npm --prefix tools ci --ignore-scripts --no-audit --no-fund",
+    "runtime:install": "node tools/node_modules/dsh-edge/scripts/cli.mjs install",
+    "runtime:upgrade": "node tools/node_modules/dsh-edge/scripts/cli.mjs upgrade",
+    "pages:dev": "npm --prefix pages run dev",
+    "pages:deploy": "npm --prefix pages run deploy"
+  }
+}

@@ -1,0 +1,13 @@
+name = "novel-harness-pages"
+pages_build_output_dir = "./public"
+# Match the pinned DSH/workerd runtime, not the date on the developer's computer.
+compatibility_date = "2026-08-14"
+
+[[services]]
+binding = "HARNESS"
+service = "novel-harness"
+
+# Preview MUST NOT use the production owner's books, keys or conversations.
+[[env.preview.services]]
+binding = "HARNESS"
+service = "novel-harness-preview"

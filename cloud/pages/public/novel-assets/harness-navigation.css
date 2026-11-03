@@ -1,0 +1,126 @@
+.novel-native-navigation {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  width: 100%;
+}
+.novel-native-navigation a,
+.novel-native-navigation button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px;
+  border: 1px solid var(--novel-control-border, var(--dsw-alias-border-l3));
+  border-radius: 7px;
+  background: var(--novel-control-bg, var(--dsw-alias-bg-layer-2));
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.novel-native-navigation a,
+.novel-native-navigation button {
+  flex: 1;
+}
+.novel-native-navigation svg {
+  flex-shrink: 0;
+}
+.novel-native-navigation[data-wide='false'] {
+  flex-direction: column;
+}
+.novel-native-navigation a:hover,
+.novel-native-navigation button:hover {
+  background: color-mix(in srgb, currentColor 9%, transparent);
+}
+.novel-native-navigation :focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -2px;
+}
+
+/* The pinned native settings shell uses a desktop sidebar even on phones.
+   Scope the layout fix to its explicit settings modal, not all DSH dialogs. */
+@media (max-width: 1023px) {
+  [role='presentation']:has(> [data-shortcut-modal='settings']) {
+    box-sizing: border-box;
+    inset: var(--novel-visible-top, 0px) 0 auto;
+    height: var(--novel-visible-height, 100dvh);
+    padding-block: max(12px, env(safe-area-inset-top), var(--dsh-frame-overlay-top, 12px))
+      max(12px, env(safe-area-inset-bottom));
+  }
+  [role='dialog'][data-shortcut-modal='settings'] {
+    height: 100%;
+    max-height: 800px;
+    min-height: 0;
+  }
+  [data-shortcut-modal='settings'] > div > div:first-child {
+    height: auto;
+    min-height: 60px;
+    align-items: center;
+    padding-block: 8px;
+  }
+  [data-shortcut-modal='settings'] > div > div:first-child > button {
+    flex: none;
+    width: 44px;
+    height: 44px;
+  }
+  [data-shortcut-modal='settings'] > div > div:last-child {
+    scroll-padding-block: 12px;
+  }
+}
+@media (max-width: 600px) {
+  [role='dialog'][data-shortcut-modal='settings'] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    width: calc(100vw - 24px);
+    max-width: calc(100vw - 24px);
+  }
+  /* Keep original nodes, IDs, slot callbacks and modal focus ownership. Only
+     flatten their layout boxes so title/close share the first row. */
+  [data-shortcut-modal='settings'] > nav,
+  [data-shortcut-modal='settings'] > div {
+    display: contents;
+  }
+  [data-shortcut-modal='settings'] > nav > div:first-child {
+    grid-area: 1 / 1;
+    align-self: center;
+    min-width: 0;
+    padding: 14px 16px;
+  }
+  [data-shortcut-modal='settings'] > nav > div:last-child {
+    grid-area: 2 / 1 / 3 / -1;
+    min-width: 0;
+    display: flex;
+    flex-direction: row;
+    gap: 4px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    padding: 0 8px 8px;
+  }
+  [data-shortcut-modal='settings'] > nav > div:last-child > button {
+    flex: none;
+    width: auto;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  [data-shortcut-modal='settings'] > div > div:first-child {
+    grid-area: 1 / 2;
+    align-self: center;
+    min-height: 44px;
+    padding: 4px 8px 4px 0;
+  }
+  [data-shortcut-modal='settings'] > div > div:last-child {
+    grid-area: 3 / 1 / 4 / -1;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 16px 20px;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+  }
+  [data-shortcut-modal='settings'] :is(input, textarea, select) {
+    font-size: 16px;
+  }
+}

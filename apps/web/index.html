@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="stylesheet" href="/workflow-ui.css" />
+  <title>长篇小说写作助手 · 局域网版</title>
+</head>
+<body>
+  <main id="app">
+    <section id="loadingView" class="center-card"><h1>📖 长篇小说写作助手</h1><p>正在连接本机服务…</p></section>
+    <section id="authView" class="center-card hidden">
+      <h1>📖 长篇小说写作助手</h1>
+      <p id="authHint"></p>
+      <form id="authForm"><input id="pin" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="current-password" placeholder="四位 PIN" required /><button class="primary" type="submit">进入书库</button></form>
+      <p class="warning">仅用于可信局域网，请勿将此 HTTP 服务映射到公网。登录设备可以读取保存的 API Key。</p>
+    </section>
+    <section id="libraryView" class="hidden">
+      <header><div><h1>📚 我的小说</h1><p>本机局域网书库</p></div><nav><button id="importButton">迁移 / 导入</button><button id="settingsButton">API 设置</button><button id="logoutButton">退出</button></nav></header>
+      <form id="inspirationForm" class="inspiration-entry">
+        <label for="inspirationSeed">✦ 灵感开写</label>
+        <textarea id="inspirationSeed" maxlength="20000" rows="3" required placeholder="一个画面、一句对白、一个奇怪的念头……例如：每次钟声响起，城里就有一个人被所有人遗忘。"></textarea>
+        <div><span class="muted">不用填设定，先把灵感变成章节大纲。</span><button id="startInspirationButton" class="primary" type="submit">开始规划小说 →</button></div>
+      </form>
+      <div class="library-tools"><button id="newProjectButton" class="primary">＋ 新建小说</button><select id="statusFilter"><option value="active">正在创作</option><option value="archived">已归档</option><option value="trashed">回收站</option></select></div>
+      <div id="projectGrid" class="project-grid"></div>
+    </section>
+    <section id="workspaceView" class="hidden workspace">
+      <header><button id="backButton">← 书库</button><div class="workspace-title"><h1 id="workspaceTitle"></h1><span id="saveStatus">已保存</span></div><nav><a id="workbenchHeaderLink" class="button primary" href="/workbench.html">返回写作</a><button id="exportButton">导出</button></nav></header>
+      <div class="workspace-tabs" role="tablist"><button data-tab="bible" class="active">小说资料库</button></div>
+      <section id="tab-project" class="tab-panel form-grid">
+        <label>书名<input id="projectTitle" maxlength="200" /></label><label>类型<input id="projectGenre" maxlength="100" /></label>
+        <label class="wide">世界观与背景<textarea id="projectSetting" rows="8"></textarea></label>
+        <label class="wide">旧版人物与设定备注<textarea id="projectCharacters" rows="8"></textarea></label>
+        <label>计划章节数<input id="chapterCount" type="number" min="1" max="9999" /></label><label>每章目标字数<input id="wordsPerChapter" type="number" min="100" max="100000" /></label>
+        <div class="wide actions"><button id="saveProjectButton" class="primary">保存项目设定</button></div>
+      </section>
+      <section id="tab-write" class="tab-panel hidden write-layout">
+        <aside><div class="chapter-nav"><button id="addChapterButton">＋ 章节</button></div><div id="chapterList"></div></aside>
+        <article><div class="chapter-head"><h2 id="chapterHeading">第 1 章</h2><span id="chapterWords">0 字</span></div><textarea id="chapterEditor" spellcheck="true" placeholder="开始写作…"></textarea></article>
+      </section>
+      <section id="tab-bible" class="tab-panel hidden">
+        <div class="bible-freeform"><div><h2>人物与设定原文</h2><p>自由文本是资料库的主要输入，可直接写人物、世界规则、势力和关键物品。</p></div><textarea id="storyBibleFreeText" rows="9" placeholder="自由书写人物与设定，不需要先拆成表格……"></textarea><button id="saveBibleTextButton">保存原文</button></div>
+        <div class="bible-ai-bar"><div><h2>AI 结构化索引</h2><p>从自由文本、大纲、长期记忆和正文整理人物、地点、物品、组织与关系；人工确认内容不会被覆盖。</p></div><button id="generateBibleButton" class="primary">✦ AI 更新结构化索引</button></div>
+        <div class="bible-columns"><article><div class="section-head"><h2>人物</h2><button id="addCharacterButton">＋ 手动添加</button></div><div id="characterList" class="entity-list"></div></article><article><div class="section-head"><h2>地点</h2><button id="addLocationButton">＋ 手动添加</button></div><div id="locationList" class="entity-list"></div></article><article><div class="section-head"><h2>物品</h2><button id="addItemButton">＋ 手动添加</button></div><div id="itemList" class="entity-list"></div></article><article><div class="section-head"><h2>组织</h2><button id="addOrganizationButton">＋ 手动添加</button></div><div id="organizationList" class="entity-list"></div></article></div>
+        <article class="relations"><div class="section-head"><h2>关系</h2><button id="addRelationButton">＋ 关系</button></div><div id="relationList" class="entity-list"></div></article>
+      </section>
+      <section id="tab-legacy" class="tab-panel hidden legacy-panel"><h2>完整 AI 工作台</h2><p>在服务存储之上使用原有的大纲生成、章节续写、长期记忆、审稿和全文 Agent。所有保存写入当前 SQLite 项目。</p><a id="workbenchLink" class="button primary" href="/workbench.html" target="_blank" rel="noopener">打开完整工作台</a></section>
+    </section>
+  </main>
+
+  <dialog id="projectDialog"><form method="dialog" id="projectForm"><h2>新建小说</h2><label>书名<input name="title" required maxlength="200" /></label><label>类型<input name="genre" maxlength="100" /></label><div class="actions"><button type="button" data-close-dialog="projectDialog">取消</button><button class="primary" value="default">创建</button></div></form></dialog>
+  <dialog id="entityDialog"><form method="dialog" id="entityForm"><h2 id="entityDialogTitle"></h2><div id="entityFields" class="form-grid"></div><div class="actions"><button type="button" data-close-dialog="entityDialog">取消</button><button class="primary" value="default">保存</button></div></form></dialog>
+  <dialog id="relationDialog"><form method="dialog" id="relationForm"><h2>编辑关系</h2><label>起点<select name="source"></select></label><label>终点<select name="target"></select></label><label>关系名称<input name="label" required /></label><label>说明<textarea name="description" rows="4"></textarea></label><label>标签（逗号分隔）<input name="tags" /></label><label>自定义字段（每行“字段名: 内容”）<textarea name="customFields" rows="4"></textarea></label><div class="actions"><button type="button" data-close-dialog="relationDialog">取消</button><button class="primary" value="default">保存</button></div></form></dialog>
+  <dialog id="importDialog"><h2>迁移旧版数据</h2><p id="legacyStatus">正在检查当前来源中的 V4.4.3 数据…</p><div class="actions"><button id="detectLegacyButton" class="primary">读取并迁移当前浏览器</button><label class="button">导入 JSON<input id="importFile" type="file" accept="application/json,.json" hidden /></label><button data-close-dialog="importDialog">关闭</button></div><p class="muted">跨来源时请选择旧版导出的完整项目 JSON。迁移不会删除旧数据，也不会调用 AI。</p></dialog>
+  <dialog id="settingsDialog"><form method="dialog" id="settingsForm"><h2>全局 API 设置</h2><div id="apiConfigList"></div><button id="addApiConfig" type="button">＋ API 配置</button><div class="actions"><button type="button" data-close-dialog="settingsDialog">取消</button><button class="primary" value="default">保存</button></div></form></dialog>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/app.ts"></script>
+</body>
+</html>

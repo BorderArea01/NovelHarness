@@ -10,6 +10,13 @@ import { pathToFileURL } from 'node:url';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { productionAuthority, productionCookies } from './production-wire.mjs';
+import {
+  compressibleAsset,
+  assetDeliveryHeaders,
+  streamBrowserBody,
+  novelModulePreloads,
+  invalidatesNativeTransports,
+} from './web-performance.mjs';
 
 const json = (value, status = 200, headers = {}) =>
   Response.json(value, { status, headers: { 'cache-control': 'no-store', ...headers } });
@@ -457,7 +464,9 @@ export async function startNovelWeb(
       '</head>',
       ['harness-navigation.css', 'manuscript.css', 'application.css']
         .map((name) => '<link rel="stylesheet" href="' + asset + name + '">')
-        .join('') + '</head>',
+        .join('') +
+        novelModulePreloads(asset) +
+        '</head>',
     );
     const headers = new Headers(response.headers);
     headers.delete('content-length');
@@ -536,22 +545,27 @@ export async function startNovelWeb(
         signal: controller.signal,
         ...(!['GET', 'HEAD'].includes(req.method) ? { body: Readable.toWeb(req), duplex: 'half' } : {}),
       });
+      const beforeEpoch = pin.state.epoch;
       const response =
         (staging || production || anonymous || shared) && url.pathname.startsWith('/__host-assets/')
           ? await env.ASSETS.fetch(request)
           : await handleRequest({ request, env, rewriteHtml });
       mark('response', url.pathname, response.status);
       if (
-        request.method === 'POST' &&
-        ['/api/auth/pin', '/api/auth/recover', '/api/auth/logout'].includes(url.pathname) &&
-        response.status >= 200 &&
-        response.status < 400
+        invalidatesNativeTransports({
+          method: request.method,
+          status: response.status,
+          path: url.pathname,
+          beforeEpoch,
+          afterEpoch: pin.state.epoch,
+        })
       ) {
         // A PIN epoch change must invalidate established transports as well
         // as new requests. Disconnect the browser carrier, not its AI Agent.
         for (const socket of sockets) socket.destroy();
       }
-      for (const [key, value] of response.headers)
+      const gzip = compressibleAsset(request, response);
+      for (const [key, value] of assetDeliveryHeaders(response.headers, gzip))
         if (!['set-cookie', 'transfer-encoding', 'connection'].includes(key)) res.setHeader(key, value);
       const cookies = response.headers.getSetCookie();
       if (cookies.length)
@@ -564,7 +578,7 @@ export async function startNovelWeb(
       if (staging) res.setHeader('x-novel-environment', 'lan-staging-independent-copy');
       if (production) res.setHeader('x-novel-host-runtime', 'official-v1');
       res.writeHead(response.status);
-      if (response.body && req.method !== 'HEAD') await pipeline(Readable.fromWeb(response.body), res);
+      if (response.body && req.method !== 'HEAD') await streamBrowserBody(response, res, gzip);
       else res.end();
     } catch {
       if (!res.headersSent)

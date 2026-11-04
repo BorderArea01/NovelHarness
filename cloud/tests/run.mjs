@@ -15,6 +15,7 @@ import './book-sync.test.mjs';
 import './bridge.test.mjs';
 import './startup-lifetime.test.mjs';
 import './web-performance.test.mjs';
+import './client-media.test.mjs';
 import './transport.test.mjs';
 import './backup.test.mjs';
 import './backup-snapshot-client.test.mjs';

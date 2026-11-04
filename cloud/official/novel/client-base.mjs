@@ -4,10 +4,12 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile, mkdir, copyFile, unlink, symlink, lstat } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, resolve, relative } from 'node:path';
+import { stageClientMedia } from './client-media.mjs';
 
 export async function installNovelClientBase() {
   const modules = resolve('cloud/official/node_modules');
   const base = resolve('data/official-validation/integration/baseline');
+  await stageClientMedia(modules, join(base, 'host-assets/client-media'));
   for (const [name, asset] of [
     ['conversation', 'conversation'],
     ['sidebar', 'sidebar'],

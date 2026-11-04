@@ -1249,6 +1249,18 @@ test('proposal tools retain original schema, reject path injection, cancellation
   assert.equal(imageList.chapter.expectedHash, body.hash);
   assert.deepEqual(imageList.chapter.placements, []);
   assert.deepEqual(imageList.images, []);
+  assert.equal(
+    JSON.parse(await imageTool.execute({ action: 'list', path: root + '/' + body.path }, exec)).chapter
+      .expectedHash,
+    body.hash,
+  );
+  await assert.rejects(
+    imageTool.execute(
+      { action: 'list', path: '/workspace/novels/b-' + 'b'.repeat(32) + '/' + body.path },
+      exec,
+    ),
+    /章节路径无效/,
+  );
   await assert.rejects(imageTool.execute({ action: 'upload', content: 'not-an-image' }, exec), /参数无效/);
   const inspect = JSON.parse(
     await registered.get('novel_proposal_inspect').execute({ proposal_id: p.id }, exec),

@@ -55,7 +55,7 @@ export function installProposalTools(instance) {
           properties: {
             action: { type: 'string', enum: ['list', 'place', 'remove'] },
             cursor: { type: 'string', description: 'list 返回 nextCursor 时继续读取下一页。' },
-            path: { type: 'string', description: '本书 chapters/ 逻辑路径。' },
+            path: { type: 'string', description: '本书 chapters/ 逻辑路径，也接受本书绝对路径。' },
             image_path: { type: 'string' },
             expected_hash: { type: 'string' },
             after: { type: 'string', description: '插图前的唯一原文，位于对应段落，最多 2000 字。' },
@@ -85,13 +85,15 @@ export function installProposalTools(instance) {
             throw new Error('插图参数无效。');
           const { fs, db } = await nativeWorkspace(instance);
           assertScope(exec);
+          const relativePath = (path) =>
+            typeof path === 'string' && path.startsWith(root + '/') ? path.slice(root.length + 1) : path;
           return JSON.stringify(
             makeDocumentService(fs, db, root.slice('/workspace/novels/'.length)).run({
               kind: 'illustrations',
               action: args.action,
-              path: args.path,
+              path: relativePath(args.path),
               cursor: args.cursor,
-              imagePath: args.image_path,
+              imagePath: relativePath(args.image_path),
               expectedHash: args.expected_hash,
               after: args.after,
               caption: args.caption,

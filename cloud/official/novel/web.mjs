@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import Database from 'better-sqlite3';
 import { productionAuthority, productionCookies } from './production-wire.mjs';
+import { clientMediaFile } from './client-media.mjs';
 import {
   compressibleAsset,
   assetDeliveryHeaders,
@@ -419,6 +420,22 @@ export async function startNovelWeb(
   env.ASSETS = {
     fetch: async (request) => {
       const path = new URL(request.url).pathname;
+      const media = clientMediaFile(path);
+      if (media) {
+        try {
+          return new Response(
+            request.method === 'HEAD'
+              ? null
+              : await readFile(join(base, 'host-assets/client-media', media.name)),
+            {
+              headers: { 'content-type': media.type, 'cache-control': 'public, max-age=31536000, immutable' },
+            },
+          );
+        } catch (error) {
+          if (error.code === 'ENOENT') return new Response(null, { status: 404 });
+          throw error;
+        }
+      }
       let file;
       if (path === '/login/') file = join(base, 'login/index.html');
       else if (/^\/auth-assets\/auth\.(mjs|css)$/.test(path)) file = join(base, path.slice(1));
@@ -513,7 +530,8 @@ export async function startNovelWeb(
         (url.pathname.startsWith('/__') &&
           !(
             (staging || production || anonymous || shared) &&
-            /^\/__host-assets\/(crypto-boot\.js|crypto-runtime\.mjs)$/.test(url.pathname)
+            (/^\/__host-assets\/(crypto-boot\.js|crypto-runtime\.mjs)$/.test(url.pathname) ||
+              clientMediaFile(url.pathname))
           ))
       ) {
         res.writeHead(404).end();

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir, writeFile, rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
 import { chromium } from '@playwright/test';
 import { startAnonymousServer } from './server.mjs';
 import { makeBookBundle } from '../pages/public/novel-assets/bundle.mjs';
@@ -122,8 +123,20 @@ try {
   assert.equal((await (await b.request.get(app.origin + '/api/novels')).json()).books.length, 0);
   for (const [i, context] of [a, b].entries()) {
     const page = await context.newPage();
+    const moduleMedia = [];
     let compressedModules = 0;
     page.on('response', (response) => {
+      if (new URL(response.url()).pathname === '/plugins/')
+        moduleMedia.push(
+          response
+            .text()
+            .then((text) => ({
+              paths: [
+                ...text.matchAll(/\/__host-assets\/client-media\/[a-f0-9]{64}\.(?:webp|png|jpeg)/g),
+              ].map((m) => m[0]),
+            }))
+            .catch(() => ({ failed: true })),
+        );
       if (
         new URL(response.url()).pathname === '/plugins/' &&
         response.headers()['content-encoding'] === 'gzip'
@@ -188,6 +201,23 @@ try {
       }
     }
     assert(compressedModules > 0, 'Native modules must use compressed delivery in the real browser.');
+    const inspections = await Promise.all(moduleMedia);
+    assert(
+      inspections.every((item) => !item.failed),
+      'Native startup module bodies must remain readable.',
+    );
+    const mediaPaths = inspections.flatMap((item) => item.paths);
+    assert(mediaPaths.length > 0, 'Large built-in UI illustrations must be external to the startup scripts.');
+    const media = await context.request.get(app.origin + mediaPaths[0]);
+    assert.equal(media.status(), 200);
+    assert.equal(
+      createHash('sha256')
+        .update(await media.body())
+        .digest('hex'),
+      mediaPaths[0].split('/').pop().split('.')[0],
+    );
+    await media.dispose();
+    report.clientMediaVerified = true;
     report.compressedModules = (report.compressedModules ?? 0) + compressedModules;
     await clickSidebarEntry(page, 'link', '数据与访问');
     await page.getByRole('heading', { name: '访客独立空间', exact: true }).waitFor();

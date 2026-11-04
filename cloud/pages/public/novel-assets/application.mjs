@@ -18,6 +18,8 @@ import {
 // and conversations share the same settings/session services and VFS owner.
 export function installApplication(ctx, React, { createPortal } = {}) {
   const h = React.createElement;
+  const owner = new AbortController();
+  ctx.effect(() => () => owner.abort(), 'novel: book navigation lifetime');
   const anonymous = globalThis.document?.body?.dataset.novelAuth === 'anonymous';
   const TitleEditor = createTitleEditor(React);
   const AssistantSplitter = createAssistantSplitter(React);
@@ -108,7 +110,7 @@ export function installApplication(ctx, React, { createPortal } = {}) {
       try {
         const result = await openNovel(ctx, {
           url: location.origin + '/?novel=' + book.id,
-          signal: AbortSignal.timeout(30000),
+          signal: owner.signal,
           prepareDraft: false,
           receipt: book,
         });

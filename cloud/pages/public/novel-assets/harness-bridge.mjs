@@ -18,8 +18,9 @@ window.__ModuleLoader__.load({
     ],
     apply(ctx) {
       const owner = new AbortController();
-      const deadline = AbortSignal.timeout(30_000);
-      const signal = AbortSignal.any([owner.signal, deadline]);
+      // Catalog subscriptions live with this plugin. A slow first connection
+      // must be allowed to recover instead of permanently expiring the owner.
+      const signal = owner.signal;
       ctx.effect(() => () => owner.abort(), 'novel-harness: navigation owner');
       const checkSession = async () => {
         if (document.visibilityState === 'hidden' || owner.signal.aborted) return;

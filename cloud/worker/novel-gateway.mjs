@@ -7,7 +7,7 @@ const json = (body, status = 200) =>
 export async function novelGateway(request, env, ctx, native) {
   const url = new URL(request.url);
   const route =
-    /^\/api\/novels\/(b-[a-f0-9]{32})\/(bootstrap|lifecycle|identity|documents|document|content|changes|proposals|review|accept|reject|history|outline-chapter|chapter-title|chapter-order|writing-run|adopt-draft)$/.exec(
+    /^\/api\/novels\/(b-[a-f0-9]{32})\/(bootstrap|lifecycle|identity|documents|document|content|changes|proposals|review|accept|reject|history|outline-chapter|chapter-title|chapter-order|writing-run|adopt-draft|illustrations)$/.exec(
       url.pathname,
     );
   const templates = url.pathname === '/api/novel-prompt-templates';
@@ -58,6 +58,7 @@ export async function novelGateway(request, env, ctx, native) {
     'chapter-order': ['GET', 'POST'],
     'writing-run': ['GET', 'POST'],
     'adopt-draft': ['POST'],
+    illustrations: ['GET', 'POST'],
   };
   if (!allowed[route[2]].includes(request.method)) return json({ error: '不支持此请求方式。' }, 405);
   return env.DSH_EDGE_INSTANCE.getByName('owner').fetch(

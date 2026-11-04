@@ -32,7 +32,7 @@ const base = fileURLToPath(new URL('../tools/', import.meta.url));
 const result = await build({
   stdin: {
     contents:
-      'export {EditorState,Transaction} from "@codemirror/state"; export {EditorView,keymap,drawSelection} from "@codemirror/view"; export {defaultKeymap,history,historyKeymap} from "@codemirror/commands";',
+      'export {EditorState,Transaction,StateField,StateEffect} from "@codemirror/state"; export {EditorView,keymap,drawSelection,Decoration,WidgetType} from "@codemirror/view"; export {defaultKeymap,history,historyKeymap} from "@codemirror/commands";',
     resolveDir: base,
   },
   bundle: true,

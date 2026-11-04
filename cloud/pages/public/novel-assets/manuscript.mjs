@@ -15,6 +15,7 @@ import { createNativeActivity, bookActivities, subscribeBookActivities } from '.
 import { createConflictEditor } from './merge-editor.mjs';
 import { mixedEndings } from './editor-text.mjs';
 import { createProseEditor } from './prose-editor.mjs';
+import { illustrationEntries } from '../../../worker/shared/illustrations.mjs';
 import { readDraft, writeDraft, settleDraft } from './draft-cache.mjs';
 import { createChapterNavigation } from './chapter-navigation.mjs';
 import { createContentManagement } from './content-management.mjs';
@@ -1555,7 +1556,13 @@ export function installManuscript(ctx, React, { navigation: appNavigation, creat
           'div',
           { className: 'novel-workspace-messages' },
           document && panel === 'chapter'
-            ? h('span', { className: 'novel-ms-count' }, text.replace(/\s/g, '').length + ' 字')
+            ? h(
+                'span',
+                { className: 'novel-ms-count' },
+                illustrationEntries(text)
+                  .reduceRight((prose, entry) => prose.slice(0, entry.from) + prose.slice(entry.to), text)
+                  .replace(/\s/g, '').length + ' 字',
+              )
             : null,
           h(
             'div',
@@ -2411,6 +2418,9 @@ export function installManuscript(ctx, React, { navigation: appNavigation, creat
                                           h(ProseEditor, {
                                             key: document.path + ':' + !!(candidate && !candidate.editable),
                                             value: text,
+                                            illustrationApi: document.path.startsWith('chapters/')
+                                              ? api
+                                              : null,
                                             readOnly: !!(candidate && !candidate.editable),
                                             onChange: edit,
                                             onSelection: (next) =>

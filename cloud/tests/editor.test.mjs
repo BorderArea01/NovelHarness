@@ -47,7 +47,7 @@ test('the deployed virtual editor has pinned MIT dependencies and a checked loca
   const asset = await readFile(new URL('../pages/public/novel-assets/editor-vendor.mjs', import.meta.url));
   assert.equal(
     createHash('sha256').update(asset).digest('hex'),
-    '483f210e046f5c14a830ed315c88634fb4ed04e9d06f79af9a11801d94878427',
+    '23671364835d4b4cdd76597cf20767ef72fe65f62f74c76c34d8b584c4fcac13',
   );
   assert.match(asset.toString('utf8'), /@marijn\/find-cluster-break/);
   assert.match(asset.toString('utf8'), /Permission is hereby granted/);

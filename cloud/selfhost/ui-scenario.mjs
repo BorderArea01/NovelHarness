@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { expect } from '@playwright/test';
+import { verifyIllustrationUi } from './illustration-ui-scenario.mjs';
 import {
   openChapter,
   waitEditor,
@@ -118,6 +119,7 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
   await openChapter(page, 'chapters/00001.md');
   const editor = page.getByRole('textbox', { name: '书稿正文', exact: true });
   await waitEditor(editor, prose);
+  await verifyIllustrationUi({ page, context, origin, book, editor, prose });
   const changed = prose + '\n\n她将回信收好，起身去开门。';
   await fillEditor(editor, changed);
   await editor.press('ControlOrMeta+s');
@@ -291,5 +293,6 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
     lightAndDark: true,
     assistantDragAndKeyboard: true,
     touchFilePickerAndImagePreview: true,
+    chapterIllustrations: true,
   };
 }

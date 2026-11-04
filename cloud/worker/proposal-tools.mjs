@@ -47,6 +47,59 @@ export function installProposalTools(instance) {
     const id = { type: 'string', description: '本次创作任务提供的 proposal_id，不得猜测其他提案。' };
     return [
       {
+        name: 'novel_illustration',
+        description:
+          '管理本书已上传的插图。list 返回图片路径与图注（不含图像数据），带 path 取得 chapter.expectedHash 和现有位置；原文用 read 读取。place 在 after 的唯一原文所在段落后插入或移动，remove 移除本章插图，expected_hash 用 list 返回版本。只改插图位置及图注，保存旧版。按作者要求挑选合适段落，勿密集插图，不猜图片内容。',
+        parameters: {
+          type: 'object',
+          properties: {
+            action: { type: 'string', enum: ['list', 'place', 'remove'] },
+            cursor: { type: 'string', description: 'list 返回 nextCursor 时继续读取下一页。' },
+            path: { type: 'string', description: '本书 chapters/ 逻辑路径。' },
+            image_path: { type: 'string' },
+            expected_hash: { type: 'string' },
+            after: { type: 'string', description: '插图前的唯一原文，位于对应段落，最多 2000 字。' },
+            caption: { type: 'string', maxLength: 160 },
+          },
+          required: ['action'],
+          additionalProperties: false,
+        },
+        output,
+        isConcurrencySafe: (args) => args.action === 'list',
+        presentCall: (args) => ({
+          card: 'generic',
+          title: args.action === 'list' ? '读取本书插图' : '调整章节插图',
+          kind: args.action === 'list' ? 'read' : 'edit',
+        }),
+        execute: async (args, exec) => {
+          if (
+            !args ||
+            Object.keys(args).some(
+              (key) =>
+                !['action', 'cursor', 'path', 'image_path', 'expected_hash', 'after', 'caption'].includes(
+                  key,
+                ),
+            ) ||
+            !['list', 'place', 'remove'].includes(args.action)
+          )
+            throw new Error('插图参数无效。');
+          const { fs, db } = await nativeWorkspace(instance);
+          assertScope(exec);
+          return JSON.stringify(
+            makeDocumentService(fs, db, root.slice('/workspace/novels/'.length)).run({
+              kind: 'illustrations',
+              action: args.action,
+              path: args.path,
+              cursor: args.cursor,
+              imagePath: args.image_path,
+              expectedHash: args.expected_hash,
+              after: args.after,
+              caption: args.caption,
+            }),
+          );
+        },
+      },
+      {
         name: 'novel_proposal_prepare',
         description:
           '作者要求写作、修改或规划时，创建可保存的本书任务；讨论不创建任务。正文省略 mode，path 或 chapter 指定目标；outline 规划，canon 整理资料。返回 task 含冻结模板、资料路径、范围和版本；生成前读取并应用 task.template 正文，不只读取保存参数，没有额外执行提示词。对话已提供 proposal_id 时用 inspect 读取原任务，不重复创建。新章缺章纲会返回 prerequisite 和 continuation；完成前置任务后以 continuation.arguments 继续原请求。工具权限不因写作意图变化。',
@@ -186,7 +239,11 @@ export function installProposalTools(instance) {
           properties: {
             proposal_id: id,
             expected_hash: { type: 'string', description: 'inspect 或上次成功 submit 返回的 expectedHash。' },
-            content: { type: 'string', description: '完整当前候选正文或候选 JSON，不含解释和代码围栏。' },
+            content: {
+              type: 'string',
+              description:
+                '完整当前候选正文或候选 JSON，不含解释和代码围栏。改写时保留原文已有的 illustrations/ 插图链接；需要调位置时用 novel_illustration。',
+            },
             complete: { type: 'boolean', description: '仅最终完整交付时为 true。部分保存不得为 true。' },
             content_scope: {
               type: 'string',

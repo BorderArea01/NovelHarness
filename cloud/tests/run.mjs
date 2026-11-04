@@ -53,6 +53,7 @@ import './purge-source-order.test.mjs';
 import './novel-tools.test.mjs';
 import './writing-run.test.mjs';
 import './reading-edition.test.mjs';
+import './illustrations.test.mjs';
 import './native-shell.test.mjs';
 import './application.test.mjs';
 import './client-base.test.mjs';

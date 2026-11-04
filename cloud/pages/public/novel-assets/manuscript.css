@@ -1627,3 +1627,153 @@ fieldset.novel-canon-detail {
     max-height: max(60px, 85cqh);
   }
 }
+.novel-illustration-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+  font:
+    12px/1.5 system-ui,
+    sans-serif;
+}
+.novel-illustration-toolbar button,
+.novel-illustration-controls button {
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 6px;
+  background: var(--novel-control-bg, #252830);
+  color: inherit;
+  cursor: pointer;
+}
+.novel-illustration-options {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+.novel-illustration-options input,
+.novel-illustration-controls input {
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+.novel-illustration {
+  position: relative;
+  margin: 10px 0;
+  padding: 8px;
+  border: 1px solid var(--ms-border, #747b88);
+  border-radius: 8px;
+  max-width: 100%;
+  font:
+    12px/1.6 system-ui,
+    sans-serif;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.novel-illustration summary {
+  cursor: pointer;
+  min-height: 24px;
+}
+.novel-illustration > details:not(.novel-illustration-actions) > summary {
+  padding-right: 76px;
+}
+.novel-illustration-actions {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 1;
+}
+.novel-illustration-actions > summary {
+  padding: 1px 7px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 5px;
+  background: var(--novel-control-bg, #252830);
+}
+.novel-illustration-actions .novel-illustration-controls {
+  position: absolute;
+  right: 0;
+  width: 230px;
+  max-width: 65vw;
+  padding: 8px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 6px;
+  background: var(--dsw-alias-bg-layer-1, #181a20);
+}
+.novel-illustration-album {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-basis: 100%;
+}
+.novel-illustration .novel-illustration-preview {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 6px 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+}
+.novel-illustration img {
+  display: block;
+  max-width: 100%;
+  height: 140px;
+  width: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+}
+.novel-illustration-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.novel-illustration-lightbox {
+  max-width: min(94vw, 1100px);
+  max-height: 90dvh;
+  padding: 12px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 10px;
+  background: var(--dsw-alias-bg-layer-1, #181a20);
+  color: var(--dsw-alias-label-primary, #eef0f4);
+}
+.novel-illustration-lightbox::backdrop {
+  background: #000b;
+}
+.novel-illustration-lightbox button {
+  display: block;
+  margin: 0 0 8px auto;
+  padding: 8px 14px;
+  border: 1px solid var(--novel-control-border, #747b88);
+  border-radius: 6px;
+  background: var(--novel-control-bg, #252830);
+  color: inherit;
+  cursor: pointer;
+}
+.novel-illustration-lightbox img {
+  display: block;
+  max-width: 100%;
+  max-height: 76dvh;
+  object-fit: contain;
+}
+@media (max-width: 600px) {
+  .novel-illustration img {
+    height: 104px;
+  }
+  .novel-illustration-toolbar button,
+  .novel-illustration-controls button {
+    min-height: 36px;
+  }
+  .novel-illustration-options input {
+    flex: 1 1 160px;
+    font-size: 16px;
+  }
+}

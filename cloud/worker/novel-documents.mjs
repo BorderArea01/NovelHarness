@@ -2,6 +2,12 @@ import { createHash } from 'node:crypto';
 import { prepareTemplate, validTemplate, TEMPLATE_LIMIT } from './prompt-templates.mjs';
 import { makeWritingRuns, hasProse } from './writing-runs.mjs';
 import { chapterHeading, chapterTitle, titleText } from './chapter-titles.mjs';
+import {
+  imageAsset,
+  illustrationPath,
+  illustrationEntries,
+  placeIllustration,
+} from './shared/illustrations.mjs';
 import { taskContext } from './shared/writing-prompts.mjs';
 import {
   prepareChapterOrder,
@@ -1225,6 +1231,88 @@ export function makeDocumentService(
     if (book.id !== id || book.root !== root || book.format !== 'novel-harness-book-v1')
       fault(409, '小说收据不匹配。');
     receipt = book;
+    if (operation.kind === 'illustrations') {
+      const loadAsset = (path) => {
+        if (!illustrationPath(path)) fault(400, '插图路径无效。');
+        const asset = raw(root + '/' + path);
+        if (!asset) fault(404, '本书插图不存在。');
+        if (path !== 'illustrations/' + sha(bytes(asset.text)) + '.json') fault(409, '插图校验失败。');
+        try {
+          return imageAsset(asset.text);
+        } catch (error) {
+          fault(400, error.message);
+        }
+      };
+      const action = operation.action ?? 'list';
+      if (action === 'read') return loadAsset(operation.imagePath);
+      if (action === 'upload') {
+        let asset;
+        try {
+          asset = JSON.stringify(imageAsset(operation.content));
+        } catch (error) {
+          fault(400, error.message);
+        }
+        const path = 'illustrations/' + sha(bytes(asset)) + '.json';
+        const existing = raw(root + '/' + path);
+        if (existing && existing.text !== asset) fault(409, '插图文件冲突，未覆盖。');
+        if (!existing) writeRaw(root + '/' + path, asset);
+        return { imagePath: path, alreadyUploaded: !!existing };
+      }
+      if (action === 'list') {
+        let chapter;
+        if (operation.path !== undefined && operation.path !== null) {
+          if (!chapterSourcePath(operation.path) || operation.path.includes('.part-'))
+            fault(400, '章节路径无效。');
+          const current = read(operation.path);
+          chapter = {
+            path: current.path,
+            expectedHash: current.hash,
+            placements: illustrationEntries(current.text),
+          };
+        }
+        const folder = root + '/illustrations';
+        safe(folder, true);
+        let names = [];
+        try {
+          names = fs.readdirSync(folder);
+        } catch (error) {
+          if (error.code !== 'ENOENT') throw error;
+        }
+        if (names.length > 2048) fault(413, '本书插图目录过大。');
+        // No base64 in assistant/tool context. Assets are read only on demand.
+        const paths = names.filter((name) => illustrationPath('illustrations/' + name)).sort();
+        const start = operation.cursor === undefined ? 0 : paths.indexOf(operation.cursor) + 1;
+        if (operation.cursor !== undefined && start === 0) fault(400, '插图分页位置无效。');
+        const page = paths.slice(start, start + 24);
+        return {
+          ...(chapter ? { chapter } : {}),
+          images: page.map((name) => {
+            const imagePath = 'illustrations/' + name,
+              asset = loadAsset(imagePath);
+            return { imagePath, label: asset.label, width: asset.width, height: asset.height };
+          }),
+          nextCursor: start + page.length < paths.length ? page.at(-1) : null,
+        };
+      }
+      if (
+        !['place', 'remove'].includes(action) ||
+        !chapterSourcePath(operation.path) ||
+        operation.path.includes('.part-')
+      )
+        fault(400, '插图操作或章节路径无效。');
+      const current = read(operation.path);
+      if (current.hash !== operation.expectedHash)
+        fault(409, '正文已更新，未移动插图；请重新读取。', { current });
+      loadAsset(operation.imagePath);
+      let text;
+      try {
+        text = placeIllustration(current.text, { ...operation, remove: action === 'remove' });
+      } catch (error) {
+        fault(400, error.message);
+      }
+      const saved = save(operation.path, text, current.hash);
+      return { path: saved.path, hash: saved.hash, images: illustrationEntries(saved.text), saved: true };
+    }
     if (operation.kind === 'content') return manageContent(operation);
     if (operation.kind === 'identity')
       return {

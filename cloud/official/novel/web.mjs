@@ -467,6 +467,14 @@ export async function startNovelWeb(
   const rewriteHtml = async (response) => {
     mark('rewrite-begin', '/');
     let html = await response.text();
+    html = html.replace(
+      /(<meta\b[^>]*name=["']viewport["'][^>]*content=["'])([^"']*)(["'])/i,
+      (tag, before, content, after) =>
+        before +
+        content.replace(/,?\s*interactive-widget=[^,]+/i, '') +
+        ', interactive-widget=resizes-content' +
+        after,
+    );
     mark('rewrite-read', '/');
     const asset = '/studio/' + revision + '/pages/public/novel-assets/';
     html = html.replace(/<title>[\s\S]*?<\/title>/i, '<title>小说工作台</title>');

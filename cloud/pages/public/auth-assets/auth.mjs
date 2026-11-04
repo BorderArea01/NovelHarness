@@ -1,5 +1,12 @@
 const $ = (id) => document.getElementById(id);
 let busy = false;
+let initialState =
+  document.body.dataset.authenticated === undefined
+    ? undefined
+    : {
+        authenticated: document.body.dataset.authenticated === 'true',
+        configured: document.body.dataset.pinConfigured === 'true',
+      };
 function maskPasswords() {
   for (const button of document.querySelectorAll('[data-reveal]')) {
     $(button.dataset.reveal).type = 'password';
@@ -111,19 +118,20 @@ function wireForm(id, path, success) {
     }
   });
 }
-wireForm('login-form', '/api/auth/login', () => location.assign('/novels/'));
+wireForm('login-form', '/api/auth/login', () => location.replace('/?view=library'));
 wireForm('bootstrap-form', '/api/auth/recover', () => load(true));
-wireForm('setup-form', '/api/auth/pin', () => location.assign('/novels/'));
-wireForm('recovery-form', '/api/auth/recover', () => location.assign('/novels/'));
+wireForm('setup-form', '/api/auth/pin', () => location.replace('/?view=library'));
+wireForm('recovery-form', '/api/auth/recover', () => location.replace('/?view=library'));
 wireForm('pin-form', '/api/auth/pin', async () => {
   message('PIN 已保存，书稿、对话与模型配置未改动。');
   await load();
 });
 async function load(afterVerification = false) {
-  const state = await api('/api/auth/pin');
+  const state = !afterVerification && initialState ? initialState : await api('/api/auth/pin');
+  initialState = undefined;
   if (document.body.dataset.page === 'login') {
     if (state.authenticated && state.configured) {
-      location.replace('/novels/');
+      location.replace('/?view=library');
       return;
     }
     const setup = state.authenticated && !state.configured;

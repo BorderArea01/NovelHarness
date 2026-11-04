@@ -23,6 +23,7 @@ try {
     args: ['--disable-background-networking', '--disable-extensions', '--js-flags=--max-old-space-size=192'],
   });
   const a = await browser.newContext({
+    hasTouch: true,
     viewport: { width: 1280, height: 900 },
     locale: 'zh-CN',
     timezoneId: 'Asia/Shanghai',

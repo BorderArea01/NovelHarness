@@ -232,6 +232,57 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
   await editor.focus();
   await overflow();
   await shot('short-phone');
+  const blockingRequests = [];
+  const observeNavigation = (req) => {
+    if (req.resourceType() === 'document' || /\/api\/auth\//.test(new URL(req.url()).pathname))
+      blockingRequests.push(req.resourceType());
+  };
+  page.on('request', observeNavigation);
+  try {
+    for (let count = 0; count < 3; count++) {
+      await clickSidebarEntry(page, 'link', '小说库');
+      await page.locator('.book[data-book-id="' + book.id + '"] .open-book').click();
+      await page.locator('.novel-manuscript[data-book-id="' + book.id + '"]').waitFor();
+    }
+    assert.deepEqual(blockingRequests, [], 'Returning home must not reload the document or check login.');
+  } finally {
+    page.off('request', observeNavigation);
+  }
+  await page.getByRole('button', { name: '创作助手', exact: true }).click();
+  await page.evaluate(() => {
+    window.__originalViewport = window.visualViewport;
+    Object.defineProperty(window, 'visualViewport', {
+      configurable: true,
+      value: Object.assign(new EventTarget(), { height: 380, offsetTop: 0, scale: 1 }),
+    });
+    window.dispatchEvent(new Event('resize'));
+  });
+  await expect(page.locator('html')).toHaveAttribute('data-novel-visible-viewport', '');
+  const dock = page.locator('.novel-author-dock');
+  assert((await dock.boundingBox()).y + (await dock.boundingBox()).height <= 381);
+  const plus = page.locator('.novel-author-input button[aria-haspopup="listbox"]').first();
+  await plus.tap();
+  const file = page.getByRole('option', { name: /添加文件|上传文件|File/i }).first();
+  await expect(file).toBeVisible();
+  const chooser = page.waitForEvent('filechooser');
+  await file.tap();
+  await (
+    await chooser
+  ).setFiles({
+    name: 'mobile-image.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aC3sAAAAASUVORK5CYII=',
+      'base64',
+    ),
+  });
+  await expect(page.locator('.novel-author-input img[src^="blob:"]')).toHaveCount(1);
+  await shot('mobile-image-keyboard');
+  await page.evaluate(() => {
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: window.__originalViewport });
+    delete window.__originalViewport;
+    window.dispatchEvent(new Event('resize'));
+  });
   return {
     searched: true,
     managementCancel: true,
@@ -239,5 +290,6 @@ export async function verifyWritingUi({ page, context, origin, book, prose }) {
     layouts: [1280, 768, 390, 320],
     lightAndDark: true,
     assistantDragAndKeyboard: true,
+    touchFilePickerAndImagePreview: true,
   };
 }

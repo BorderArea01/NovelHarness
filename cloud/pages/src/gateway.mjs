@@ -123,6 +123,25 @@ export async function handleRequest({ request, env, rewriteHtml = rewriteNovelHt
     const novelAsset = /^\/novel-assets\/[a-z0-9-]+\.(?:mjs|css)$/.test(url.pathname);
     const sharedAsset = /^\/worker\/shared\/(?:writing-context|writing-prompts)\.mjs$/.test(url.pathname);
     const nativeShell = NATIVE_SHELL_MODULES.get(url.pathname);
+    let loginState;
+    if (loginPage) {
+      const proof = await env.HARNESS.fetch(
+        new Request(new URL('/api/auth/pin', url), {
+          headers: { cookie: request.headers.get('cookie') ?? '' },
+          redirect: 'manual',
+        }),
+      );
+      if (!proof.ok) return failure('登录服务暂不可用，请稍后重试。', 503);
+      loginState = await proof.json();
+      if (
+        loginState.authenticated === true &&
+        (loginState.configured === true || loginState.mode === 'anonymous')
+      )
+        return new Response(null, {
+          status: 302,
+          headers: { location: '/?view=library', 'cache-control': 'no-store' },
+        });
+    }
     if (
       novelPage ||
       novelAsset ||
@@ -170,6 +189,17 @@ export async function handleRequest({ request, env, rewriteHtml = rewriteNovelHt
         url,
       );
       const asset = await env.ASSETS.fetch(new Request(assetUrl, { method: request.method }));
+      let assetBody = asset.body;
+      if (loginState && request.method !== 'HEAD') {
+        assetBody = (await asset.text()).replace(
+          '<body ',
+          '<body data-authenticated="' +
+            (loginState.authenticated === true) +
+            '" data-pin-configured="' +
+            (loginState.configured === true) +
+            '" ',
+        );
+      }
       const headers = new Headers(asset.headers);
       // Only version-addressed static CODE may persist in this browser. Book
       // data, HTML, auth and unversioned compatibility imports remain no-store.
@@ -184,7 +214,8 @@ export async function handleRequest({ request, env, rewriteHtml = rewriteNovelHt
         'content-security-policy',
         "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
       );
-      return new Response(asset.body, { status: asset.status, headers });
+      if (loginState) headers.delete('content-length');
+      return new Response(assetBody, { status: asset.status, headers });
     }
     // /novels.html must not bypass the authenticated document route.
     if (

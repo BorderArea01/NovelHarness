@@ -528,6 +528,26 @@ html[data-novel-visible-viewport] .novel-author-input [data-question-key] > sect
   position: relative;
   width: 100%;
 }
+/* The original command/file menu opens above its card. Only the text field
+   scrolls; the dock must not clip the menu or its touch targets. */
+.novel-author-dock:not([data-pending-interaction='true']) {
+  overflow: visible;
+  max-height: none;
+}
+.novel-author-input [data-trigger-menu] {
+  max-height: min(400px, calc(var(--novel-visible-height, 100dvh) - 160px));
+}
+@media (max-width: 600px) {
+  .novel-author-input :is(textarea, [contenteditable='true']) {
+    font-size: 16px;
+  }
+  html[data-novel-visible-viewport] .novel-author-dock {
+    padding-bottom: 6px;
+  }
+  html[data-novel-visible-viewport] .novel-author-shortcuts {
+    display: none;
+  }
+}
 @media (max-width: 600px) and (max-height: 500px) {
   .novel-author-dock[data-pending-interaction='true'] {
     max-height: calc(100% - 52px);

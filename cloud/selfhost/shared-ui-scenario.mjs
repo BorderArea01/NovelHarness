@@ -45,6 +45,10 @@ export async function verifySharedUi(browser) {
     await page.getByLabel('登录 PIN', { exact: true }).fill('864209');
     await page.locator('#login-form button[type=submit]').click();
     await page.locator('.novel-native-frame').waitFor({ timeout: 45000 });
+    const bookmarkedLogin = await context.request.get(app.origin + '/login', { maxRedirects: 0 });
+    assert.equal(bookmarkedLogin.status(), 302);
+    assert.equal(bookmarkedLogin.headers().location, '/?view=library');
+    await bookmarkedLogin.dispose();
     // Initial native notices can defer sidebar mounting. Wait for the actual
     // desktop entry instead of deciding that a not-yet-mounted sidebar is folded.
     await page.getByRole('link', { name: '数据与访问', exact: true }).click({ timeout: 45000 });

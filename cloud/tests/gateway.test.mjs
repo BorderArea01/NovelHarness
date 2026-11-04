@@ -5,19 +5,72 @@ import { handleRequest, releaseAssetBase, rewriteNovelHtml } from '../pages/src/
 const origin = 'https://novel.example';
 const request = (path, init) => new Request(origin + path, init);
 const proxy = (fn) => ({ HARNESS: { fetch: fn } });
+test('an authenticated login bookmark redirects on the server without rendering a checking screen', async () => {
+  let calls = 0;
+  const result = await handleRequest({
+    request: request('/login'),
+    env: {
+      HARNESS: {
+        fetch: async (req) => {
+          calls++;
+          assert.equal(new URL(req.url).pathname, '/api/auth/pin');
+          return Response.json({ authenticated: true, configured: true });
+        },
+      },
+      ASSETS: {
+        fetch() {
+          throw Error('Must not render login');
+        },
+      },
+    },
+  });
+  assert.equal(result.status, 302);
+  assert.equal(result.headers.get('location'), '/?view=library');
+  assert.equal(calls, 1);
+});
+test('login renders current server state without an extra browser auth request and never caches it', async () => {
+  for (const state of [
+    { authenticated: false, configured: true },
+    { authenticated: true, configured: false },
+  ]) {
+    const result = await handleRequest({
+      request: request('/login'),
+      env: {
+        HARNESS: { fetch: async () => Response.json(state) },
+        ASSETS: {
+          fetch: async () =>
+            new Response('<body data-page="login">PIN</body>', { headers: { 'content-type': 'text/html' } }),
+        },
+      },
+    });
+    const text = await result.text();
+    assert(text.includes('data-authenticated="' + state.authenticated + '"'));
+    assert(text.includes('data-pin-configured="' + state.configured + '"'));
+    assert.equal(result.headers.get('cache-control'), 'no-store');
+  }
+});
 
 test('server-rendered title is generic before browser modules start', () => {
   const previous = globalThis.HTMLRewriter;
   const handlers = new Map();
   globalThis.HTMLRewriter = class {
-    on(selector, handler) { handlers.set(selector, handler); return this; }
-    transform(response) { return response; }
+    on(selector, handler) {
+      handlers.set(selector, handler);
+      return this;
+    }
+    transform(response) {
+      return response;
+    }
   };
   try {
     const response = new Response('<title>private fixture title</title>');
     assert.equal(rewriteNovelHtml(response), response);
     let title;
-    handlers.get('title').element({ setInnerContent(value) { title = value; } });
+    handlers.get('title').element({
+      setInnerContent(value) {
+        title = value;
+      },
+    });
     assert.equal(title, '小说工作台');
   } finally {
     if (previous === undefined) delete globalThis.HTMLRewriter;

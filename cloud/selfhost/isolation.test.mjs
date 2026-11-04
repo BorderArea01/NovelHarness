@@ -52,6 +52,24 @@ try {
   });
   assert([404, 409].includes(denied.status), 'B can read A book: ' + denied.status);
   await denied.arrayBuffer();
+  const illustration = {
+    format: 'novel-illustration-v1',
+    width: 1,
+    height: 1,
+    label: '隔离图片',
+    data: 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA',
+  };
+  const uploaded = await call(0, path + '/illustrations', {
+    action: 'upload',
+    content: JSON.stringify(illustration),
+  });
+  const imageRoute = path + '/illustrations?action=read&imagePath=' + encodeURIComponent(uploaded.imagePath);
+  assert.deepEqual(await call(0, imageRoute), illustration);
+  const privateImage = await fetch(app.origin + imageRoute, {
+    headers: { origin: app.origin, cookie: [...jars[1]].map(([k, v]) => k + '=' + v).join('; ') },
+  });
+  assert([404, 409].includes(privateImage.status), 'B can read A illustration: ' + privateImage.status);
+  await privateImage.arrayBuffer();
   assert.equal((await call(0, '/api/auth/pin')).mode, 'anonymous');
   await rpc(0, 'credentials/set', { ref: 'DEEPSEEK_API_KEY', value: 'fixture-only-no-model-requests' });
   assert.equal(
@@ -73,6 +91,8 @@ try {
   await forged.arrayBuffer();
   await app.close();
   app = await startAnonymousServer({ port: 0, maxVisitors: 1 });
+  assert.deepEqual(await call(0, imageRoute), illustration);
+  report.illustrationsIsolatedAndRestartPreserved = true;
   assert.equal((await call(0, '/api/novels')).books.length, 1);
   assert.equal((await call(1, '/api/novels')).books.length, 0);
   assert.equal(

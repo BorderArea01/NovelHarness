@@ -71,6 +71,19 @@ try {
   const bundle = await makeBookBundle(null, { title: '共享空间验收', seed: '合成测试，不调用模型。' });
   const api = '/api/novels/' + bundle.manifest.id;
   await call(0, api + '/bootstrap', bundle);
+  const illustration = {
+    format: 'novel-illustration-v1',
+    width: 1,
+    height: 1,
+    label: '共享图片',
+    data: 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA',
+  };
+  const uploaded = await call(0, api + '/illustrations', {
+    action: 'upload',
+    content: JSON.stringify(illustration),
+  });
+  const imageRoute = api + '/illustrations?action=read&imagePath=' + encodeURIComponent(uploaded.imagePath);
+  assert.deepEqual(await call(1, imageRoute), illustration);
   assert.deepEqual((await call(0, '/api/novels')).books, (await call(1, '/api/novels')).books);
   const prose = '# 第一章\n\n从另一台设备继续创作。\n';
   await call(0, api + '/document', { path: 'chapters/1.md', text: prose, expectedHash: null }, 'PUT');
@@ -105,6 +118,8 @@ try {
   // Existing cookies and PIN survive restart, even with a different ephemeral
   // listener port. A bootstrap PIN is never used to reset an existing PIN.
   app = await startSelfHostedServer({ mode: 'shared', port: 0, dataDirectory: root, initialPin: '000000' });
+  assert.deepEqual(await call(1, imageRoute), illustration);
+  report.illustrationsSharedAndRestartPreserved = true;
   assert.equal((await call(1, api + '/document?path=chapters%2F1.md')).text, prose);
   assert.deepEqual(
     (await rpc(0, 'session/list', { _request: {} })).items.map((s) => s.id),

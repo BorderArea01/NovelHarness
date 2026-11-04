@@ -17,7 +17,7 @@ function releaseAsset(pathname, revision) {
   const path = pathname.slice(prefix.length);
   if (/^pages\/public\/novel-assets\/[a-z0-9-]+\.(mjs|css)$/.test(path))
     return '/' + path.slice('pages/public/'.length);
-  if (/^worker\/shared\/(writing-context|writing-prompts)\.mjs$/.test(path)) return '/' + path;
+  if (/^worker\/shared\/(writing-context|writing-prompts|illustrations)\.mjs$/.test(path)) return '/' + path;
   return null;
 }
 
@@ -121,7 +121,9 @@ export async function handleRequest({ request, env, rewriteHtml = rewriteNovelHt
     const authAsset = /^\/auth-assets\/(?:auth\.mjs|auth\.css)$/.test(url.pathname);
     const novelPage = url.pathname === '/novels' || url.pathname === '/novels/';
     const novelAsset = /^\/novel-assets\/[a-z0-9-]+\.(?:mjs|css)$/.test(url.pathname);
-    const sharedAsset = /^\/worker\/shared\/(?:writing-context|writing-prompts)\.mjs$/.test(url.pathname);
+    const sharedAsset = /^\/worker\/shared\/(?:writing-context|writing-prompts|illustrations)\.mjs$/.test(
+      url.pathname,
+    );
     const nativeShell = NATIVE_SHELL_MODULES.get(url.pathname);
     let loginState;
     if (loginPage) {

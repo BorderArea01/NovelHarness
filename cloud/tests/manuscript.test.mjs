@@ -13,6 +13,7 @@ import { writingPrompt } from '../pages/public/novel-assets/bundle.mjs';
 import { DOCUMENT_LIMIT, PART_LIMIT } from '../worker/document-storage.mjs';
 import { makeBackup, restoreBackup } from '../pages/public/novel-assets/backup.mjs';
 import { installProposalTools } from '../worker/proposal-tools.mjs';
+import { imageAsset } from '../worker/shared/illustrations.mjs';
 import {
   editorText,
   editorValue,
@@ -111,6 +112,54 @@ function fixture(options = {}) {
 function create(f, path = 'chapters/1.md', text = '\ufeff雨夜。\r\n钟声。🌧️') {
   return f.run({ kind: 'save', path, text, expectedHash: null });
 }
+test('book illustrations upload idempotently; assistant placement uses CAS, history and original transaction', () => {
+  const f = fixture();
+  const content = JSON.stringify(
+    imageAsset(
+      JSON.stringify({
+        format: 'novel-illustration-v1',
+        width: 1,
+        height: 1,
+        label: '雨夜',
+        data: 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA',
+      }),
+    ),
+  );
+  const image = f.run({ kind: 'illustrations', action: 'upload', content });
+  assert.equal(f.run({ kind: 'illustrations', action: 'upload', content }).alreadyUploaded, true);
+  assert.equal(f.run({ kind: 'illustrations' }).images[0].label, '雨夜');
+  const before = create(f);
+  const op = {
+    kind: 'illustrations',
+    action: 'place',
+    path: before.path,
+    imagePath: image.imagePath,
+    expectedHash: before.hash,
+    after: '雨夜。',
+    caption: '雨夜',
+  };
+  const placed = f.run(op);
+  assert.equal(placed.saved, true);
+  const saved = f.run({ kind: 'read', path: before.path });
+  assert(saved.text.includes(image.imagePath));
+  assert.equal(f.run({ kind: 'history', path: before.path, hash: before.hash }).text, before.text);
+  assert.throws(() => f.run(op), /正文已更新/);
+  assert.throws(
+    () => f.run({ ...op, expectedHash: saved.hash, imagePath: 'illustrations/' + 'f'.repeat(64) + '.json' }),
+    /不存在/,
+  );
+  assert.equal(f.run({ kind: 'read', path: before.path }).text, saved.text);
+  f.setFailure(root + '/' + before.path);
+  assert.throws(() => f.run({ ...op, expectedHash: saved.hash, action: 'remove' }), /storage full/);
+  assert.equal(f.run({ kind: 'read', path: before.path }).text, saved.text);
+  f.setFailure(null);
+  f.run({ ...op, expectedHash: saved.hash, action: 'remove' });
+  assert(!f.run({ kind: 'read', path: before.path }).text.includes('!['));
+  assert.throws(
+    () => f.run({ kind: 'illustrations', action: 'read', imagePath: '../' + image.imagePath }),
+    /路径无效/,
+  );
+});
 
 function manual(f, action, extra = {}) {
   const preview = f.run({ kind: 'content', action: 'inspect', targetAction: action, ...extra });
@@ -1195,6 +1244,24 @@ test('proposal tools retain original schema, reject path injection, cancellation
   installProposalTools(instance);
   created({ agent });
   const exec = { agent, signal: new AbortController().signal };
+  const imageTool = registered.get('novel_illustration');
+  const imageList = JSON.parse(await imageTool.execute({ action: 'list', path: body.path }, exec));
+  assert.equal(imageList.chapter.expectedHash, body.hash);
+  assert.deepEqual(imageList.chapter.placements, []);
+  assert.deepEqual(imageList.images, []);
+  assert.equal(
+    JSON.parse(await imageTool.execute({ action: 'list', path: root + '/' + body.path }, exec)).chapter
+      .expectedHash,
+    body.hash,
+  );
+  await assert.rejects(
+    imageTool.execute(
+      { action: 'list', path: '/workspace/novels/b-' + 'b'.repeat(32) + '/' + body.path },
+      exec,
+    ),
+    /章节路径无效/,
+  );
+  await assert.rejects(imageTool.execute({ action: 'upload', content: 'not-an-image' }, exec), /参数无效/);
   const inspect = JSON.parse(
     await registered.get('novel_proposal_inspect').execute({ proposal_id: p.id }, exec),
   );

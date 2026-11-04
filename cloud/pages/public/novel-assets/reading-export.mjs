@@ -24,6 +24,7 @@ export function createReadingExport(React) {
       setMessage('正在读取正式正文…');
       try {
         const edition = await collectReadingEdition(api, client.readFile, {
+          includeImages: format !== 'txt',
           signal: abort.signal,
           onProgress: (p) =>
             setMessage((p.phase === 'read' ? '读取' : '校验') + ' ' + p.done + '/' + p.total),

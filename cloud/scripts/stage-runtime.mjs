@@ -13,7 +13,7 @@ export async function stageRuntime(destination, { pagesPublic = resolve(root, 'c
   // remains INSIDE the no-bundle Worker module root.
   for (const directory of [resolve(pagesPublic, 'worker/shared')]) {
     await mkdir(directory, { recursive: true });
-    for (const name of ['writing-context.mjs', 'writing-prompts.mjs'])
+    for (const name of ['writing-context.mjs', 'writing-prompts.mjs', 'illustrations.mjs'])
       await cp(resolve(root, 'cloud/worker/shared', name), resolve(directory, name), { force: true });
   }
   await mkdir(destination, { recursive: true });

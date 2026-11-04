@@ -295,6 +295,13 @@ export class DshEdgeInstance extends NativeDshEdgeInstance {
         id: url.searchParams.get('id') ?? input.id,
         hash: url.searchParams.get('hash') ?? input.hash,
         after: url.searchParams.get('after') ?? input.after,
+        ...(kind === 'illustrations' && request.method === 'GET'
+          ? {
+              action: url.searchParams.get('action') ?? 'list',
+              imagePath: url.searchParams.get('imagePath'),
+              cursor: url.searchParams.get('cursor') ?? undefined,
+            }
+          : {}),
         ...(kind === 'writingRun'
           ? { action: input.action ?? (url.searchParams.get('id') ? 'get' : 'list') }
           : {}),

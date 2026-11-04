@@ -324,6 +324,10 @@ test('only current version-addressed code gets private immutable caching; auth a
   for (const [path, canonical] of [
     [base + 'application.mjs', '/novel-assets/application.mjs'],
     [
+      new URL('../../../worker/shared/illustrations.mjs', origin + base + 'prose-editor.mjs').pathname,
+      '/worker/shared/illustrations.mjs',
+    ],
+    [
       new URL('../../../worker/shared/writing-context.mjs', origin + base + 'reference-core.mjs').pathname,
       '/worker/shared/writing-context.mjs',
     ],

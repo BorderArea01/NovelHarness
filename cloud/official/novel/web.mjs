@@ -443,7 +443,7 @@ export async function startNovelWeb(
         file = join(base, 'assets', path.slice('/novel-assets/'.length));
       else if (/^\/native-shell\/(conversation|sidebar|layout|settings)\.js$/.test(path))
         file = join(base, path.slice(1));
-      else if (/^\/worker\/shared\/(writing-context|writing-prompts)\.mjs$/.test(path))
+      else if (/^\/worker\/shared\/(writing-context|writing-prompts|illustrations)\.mjs$/.test(path))
         file = join(base, path.slice(1));
       else if (
         (staging || production || anonymous || shared) &&

@@ -122,6 +122,14 @@ try {
   assert.equal((await (await b.request.get(app.origin + '/api/novels')).json()).books.length, 0);
   for (const [i, context] of [a, b].entries()) {
     const page = await context.newPage();
+    let compressedModules = 0;
+    page.on('response', (response) => {
+      if (
+        new URL(response.url()).pathname === '/plugins/' &&
+        response.headers()['content-encoding'] === 'gzip'
+      )
+        compressedModules++;
+    });
     page.setDefaultTimeout(30000);
     for (const name of ['继续', 'Continue', '稍后配置', 'Configure later'])
       await page.addLocatorHandler(
@@ -179,6 +187,8 @@ try {
         throw error;
       }
     }
+    assert(compressedModules > 0, 'Native modules must use compressed delivery in the real browser.');
+    report.compressedModules = (report.compressedModules ?? 0) + compressedModules;
     await clickSidebarEntry(page, 'link', '数据与访问');
     await page.getByRole('heading', { name: '访客独立空间', exact: true }).waitFor();
     assert.equal(await page.getByText('修改登录 PIN', { exact: true }).count(), 0);

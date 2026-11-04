@@ -84,7 +84,11 @@ export async function openNovel(
     const response = await fetcher(
       `/api/workspace/file?path=${encodeURIComponent(address.root + '/book.json')}`,
       {
-        signal: preparing,
+        // Bound the actual document request, not the preceding native catalog
+        // connection. Catalogs can recover on a slower public connection.
+        signal: preparing
+          ? AbortSignal.any([preparing, AbortSignal.timeout(30_000)])
+          : AbortSignal.timeout(30_000),
         credentials: 'same-origin',
         redirect: 'error',
       },
